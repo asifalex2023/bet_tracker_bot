@@ -99,7 +99,7 @@ Replace YOUR_USER and /path/to/betting-tracker-bot with your actual username and
 
 🚀 You’re all set! The bot will now start automatically with your server.
 
-Maintainer: @asifalex
+Maintainer: [@asifalex](https://t.me/asifalex)
 
 
 ## 🧾 Commands Overview
@@ -122,22 +122,10 @@ Maintainer: @asifalex
 Pull requests, issues, and feature suggestions are welcome!
 Fork the repo, create a new branch, push your changes, and open a PR.
 
----
-
 ## 📜 License
 
-MIT License – free to use, modify, and distribute.
-Just don’t forget the credits. Good luck and bet smart! 🍀
+This project is licensed under the **MIT License** – you’re free to use, modify, and distribute it for personal or commercial purposes.
 
-```
+Please retain the original credits and links when sharing or forking.  
+Use responsibly – and may the odds be ever in your favor! 🎯🍀
 
----
-
-Let me know if you’d like:
-- A badge section (e.g. `build`, `license`, etc.)
-- A logo image at the top
-- A `Dockerfile` setup section  
-- A sample `.env` alternative setup
-
-All easy to add.
-```
