@@ -1,23 +1,24 @@
-Here's a refined and professional version of your `README.md`, suitable for a GitHub repository:
+Here's a refined and professional version of you
 
 ---
 
 ````markdown
 # 🎲 Betting Tracker Telegram Bot
 
-A lightweight Telegram bot for managing betting picks and tracking performance statistics – built with ❤️ by [@asifalex](https://t.me/asifalex).
+A lightweight Telegram bot for managing betting 
+with ❤️ by [@asifalex](https://t.me/asifalex).
 
 ---
 
 ## ✨ Features
 
 - 🎯 `/addpick` – Submit a new betting pick  
-- ✔️ `/setresult` – Record the outcome of a pick  
-- ⏳ `/pending` – View all active (unresolved) picks  
-- 📊 `/stats [daily|weekly|monthly]` – Analyze performance over time  
-- 🏆 `/leaderboard [daily|weekly|monthly]` – See top performers  
-- 🗑️ `/resetdb` – Reset the database (admin only)  
-- 🔐 Admin-only protection with polite messages for non-admins 🚫  
+- ✔️ `/setresult` – Record the outcome of a pick
+- ⏳ `/pending` – View all active (unresolved) p
+- 📊 `/stats [daily|weekly|monthly]` – Analyze p
+- 🏆 `/leaderboard [daily|weekly|monthly]` – See
+- 🗑️ `/resetdb` – Reset the database (admin only
+- 🔐 Admin-only protection with polite messages 
 
 ---
 
@@ -96,6 +97,12 @@ sudo journalctl -fu bettingbot
 The bot will now start with your server and restart on failures.
 
 ---
+Replace YOUR_USER and /path/to/betting-tracker-bot with your actual username and project path.
+
+🚀 You’re all set! The bot will now start automatically with your server.
+
+Maintainer: @asifalex
+
 
 ## 🧾 Commands Overview
 
