@@ -99,7 +99,7 @@ Replace YOUR_USER and /path/to/betting-tracker-bot with your actual username and
 
 🚀 You’re all set! The bot will now start automatically with your server.
 
-Maintainer: [@asifalex](https://t.me/asifalex)
+Maintainer: **[@asifalex](https://t.me/asifalex)**
 
 
 ## 🧾 Commands Overview
@@ -121,6 +121,8 @@ Maintainer: [@asifalex](https://t.me/asifalex)
 
 Pull requests, issues, and feature suggestions are welcome!
 Fork the repo, create a new branch, push your changes, and open a PR.
+
+Issue - **[@asifalex](https://t.me/asifalex)**
 
 ## 📜 License
 
