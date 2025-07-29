@@ -14,8 +14,33 @@ db         = client["bet_tracker"]
 collection = db["picks"]
 
 # ────────── helpers ──────────
-def generate_short_id(length: int = 6) -> str:
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+def generate_short_id() -> str:
+    """
+    Return a UNIQUE two–digit string (“01” … “99”).
+    We keep a tiny counter document in Mongo so that IDs
+    are sequential and never clash.
+    """
+    counter = db["counters"].find_one_and_update(
+        {"_id": "pick_id"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=True,
+    )
+    seq = (counter["seq"] - 1) % 100          # wrap after 99 → 00
+    short_id = f"{seq:02}"                    # always two digits
+
+    # safety-net: make sure the id isn’t in use; advance until it’s free
+    while collection.find_one({"short_id": short_id}):
+        counter = db["counters"].find_one_and_update(
+            {"_id": "pick_id"},
+            {"$inc": {"seq": 1}},
+            upsert=True,
+            return_document=True,
+        )
+        seq = (counter["seq"] - 1) % 100
+        short_id = f"{seq:02}"
+    return short_id
 
 # ────────── CRUD functions used by the bot ──────────
 def add_pick(user: str, odds: float, stake: float) -> bool:

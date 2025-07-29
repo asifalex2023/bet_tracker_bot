@@ -29,14 +29,65 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN
     )
 
+# bot.py  (only the handlers shown were changed)  ────────────────────
 async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user, odds, stake = context.args
         add_pick(user.strip(), float(odds), float(stake))
-        await update.message.reply_text(f"✅ Pick stored for *{user}* – awaiting result.",
-                                        parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(
+            f"🎯 New pick saved!\n👤 *{user}*  |  🎲 *{odds}*  |  💵 *{stake}*",
+            parse_mode=ParseMode.MARKDOWN,
+        )
     except Exception:
         await update.message.reply_text("⚠️ Usage: /addpick <user> <odds> <stake>")
+
+async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        pick_id, result = context.args
+        if result.lower() not in ("win", "loss"):
+            raise ValueError()
+        if set_result(pick_id, result.lower()):
+            emoji = "✅" if result.lower() == "win" else "❌"
+            await update.message.reply_text(f"{emoji} Result stored.")
+        else:
+            await update.message.reply_text("🔎 Pick not found.")
+    except Exception:
+        await update.message.reply_text("⚠️ Usage: /setresult <id> <win/loss>")
+
+async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    rows = []
+    for doc in get_pending():
+        rows.append(
+            f"🆔 *{doc['short_id']}*  |  👤 *{doc['user']}*  |  🎲 {doc['odds']}  |  💵 {doc['stake']}"
+        )
+    text = "⏳ *Pending Picks*\n" + ("\n".join(rows) if rows else "— none —")
+    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    period = (context.args[0].lower() if context.args else "weekly")
+    if period not in ("daily", "weekly", "monthly"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [daily|weekly|monthly]")
+        return
+
+    board = []
+    for u in get_all_users():
+        s = calculate_stats(list(get_picks_by_user(u, period)))
+        board.append((u, s["profit"], s["ev"], s["count"]))
+    board.sort(key=lambda x: x[1], reverse=True)
+
+    if not board:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    medals = ["🥇", "🥈", "🥉"] + ["🏅"] * 7
+    lines = [
+        f"{medals[i] if i < len(medals) else '•'}  👤 *{u}*  {p:+.0f}  (EV {ev:+.1f}%, {c} picks)"
+        for i, (u, p, ev, c) in enumerate(board[:10])
+    ]
+    await update.message.reply_text(
+        f"🏆 *Leaderboard* – {period.capitalize()}\n" + "\n".join(lines),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
