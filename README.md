@@ -1,8 +1,4 @@
-Here's a refined and professional version of you
 
----
-
-````markdown
 # 🎲 Betting Tracker Telegram Bot
 
 A lightweight Telegram bot for managing betting 
@@ -32,7 +28,9 @@ with ❤️ by [@asifalex](https://t.me/asifalex).
 sudo apt update && sudo apt install -y python3 python3-pip git
 git clone https://github.com/YOUR_USERNAME/betting-tracker-bot.git
 cd betting-tracker-bot
+````
 
+````
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
