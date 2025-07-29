@@ -1,2 +1,3 @@
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-ADMIN_IDS = [123456789]  # Replace with your Telegram user ID
+BOT_TOKEN = "8443028871:AAGHIcFKMmKzg3abGCgKdvrc4RzJNXYg40Y"
+ADMIN_IDS = [417252998]  # Replace with your Telegram user ID
+MONGO_URI = "mongodb+srv://rusoxyny:rusoxyny@cluster0.e4uj5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
