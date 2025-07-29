@@ -1,7 +1,11 @@
 # bot.py
 from telegram import Update
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler      
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup   # ← add
+from telegram.constants import ParseMode
+
+
 
 from config   import BOT_TOKEN, ADMIN_IDS
 from database import (
@@ -169,14 +173,49 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN
     )
 
-
 # ---------- /resetdb ----------
 async def resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("🚫 You’re not allowed to do that.")
+    user_id = update.effective_user.id
+
+    # non-admin → immediate rejection
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("🚫 No permission.")
         return
-    reset_database()
-    await update.message.reply_text("🗑️ Database wiped clean.")
+
+    # if the admin already typed “/resetdb yes” we skip straight to wiping
+    if context.args and context.args[0].lower() == "yes":
+        reset_database()
+        await update.message.reply_text("🗑️ Database wiped clean.")
+        return
+
+    # ask for confirmation with inline buttons
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("✅ Yes — wipe it", callback_data="resetdb_yes"),
+            InlineKeyboardButton("❌ No — keep data", callback_data="resetdb_no"),
+        ]
+    ])
+    await update.message.reply_text(
+        "⚠️ *Danger!*  This will delete _every_ pick.\n"
+        "Are you sure?",
+        reply_markup=keyboard,
+        parse_mode=ParseMode.MARKDOWN
+    )
+async def confirm_resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query   = update.callback_query
+    user_id = query.from_user.id
+    await query.answer()       # acknowledge the button tap
+
+    if user_id not in ADMIN_IDS:
+        await query.edit_message_text("🚫 No permission.")
+        return
+
+    if query.data == "resetdb_yes":
+        reset_database()
+        await query.edit_message_text("🗑️ Database wiped clean.")
+    else:
+        await query.edit_message_text("✅ Reset cancelled.")
+
 
 # ───────────── bot init (add /commands handler) ─────────────
 app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -189,5 +228,6 @@ app.add_handler(CommandHandler("pending",     pending))
 app.add_handler(CommandHandler("stats",       stats))
 app.add_handler(CommandHandler("leaderboard", leaderboard))
 app.add_handler(CommandHandler("resetdb",     resetdb))
+app.add_handler(CallbackQueryHandler(confirm_resetdb, pattern="^resetdb_"))
 
 app.run_polling()
