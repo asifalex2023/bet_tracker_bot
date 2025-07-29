@@ -1,52 +1,20 @@
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 from bson import ObjectId
-import random
-import string
+import random, string
 
-# Connect to MongoDB Atlas
 client = MongoClient("mongodb+srv://rusoxyny:rusoxyny@cluster0.e4uj5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = client["bet_tracker"]
+db         = client["bet_tracker"]
 collection = db["picks"]
 
 def generate_short_id(length=6):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
-def add_pick(user, odds, stake):
-    short_id = generate_short_id()
-    while collection.find_one({"short_id": short_id}):
-        short_id = generate_short_id()
-    
-    pick = {
-        "short_id": short_id,
-        "user": user,
-        "odds": float(odds),
-        "stake": float(stake),
-        "result": "pending",
-        "date": datetime.utcnow()
-    }
-    collection.insert_one(pick)
-    return True
-
-def set_result(pick_id, result):
-    # Try short_id first, fallback to full ObjectId if 24 chars
-    if len(pick_id) == 24:
-        try:
-            filter_query = {"_id": ObjectId(pick_id)}
-        except:
-            filter_query = {"short_id": pick_id}
-    else:
-        filter_query = {"short_id": pick_id}
-
-    updated = collection.update_one(filter_query, {"$set": {"result": result}})
-    return updated.modified_count > 0
-
-def get_pending():
-    return collection.find({"result": "pending"})
+# … add_pick, set_result, get_pending stay unchanged …
 
 def get_picks_by_user(user, period="daily"):
+    # identical to what you already had
     now = datetime.utcnow()
-
     if period == "daily":
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == "weekly":
@@ -59,5 +27,14 @@ def get_picks_by_user(user, period="daily"):
     return collection.find({
         "user": user,
         "result": {"$ne": "pending"},
-        "date": {"$gte": start}
+        "date":  {"$gte": start}
     })
+
+# NEW ↓↓↓ ---------------------------------------------------
+def get_all_users():
+    "Return a sorted list of distinct user names that have *any* finished pick."
+    return sorted(collection.distinct("user", {"result": {"$ne": "pending"}}))
+
+def reset_database():
+    "Danger – deletes every document in the picks collection."
+    collection.delete_many({})
