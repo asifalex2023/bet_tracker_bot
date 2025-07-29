@@ -1,29 +1,33 @@
-```markdown
+Here's a refined and professional version of your `README.md`, suitable for a GitHub repository:
+
+---
+
+````markdown
 # 🎲 Betting Tracker Telegram Bot
 
-Welcome to **Betting Tracker Bot**, your handy companion for managing bets and tracking stats on Telegram – lovingly crafted by [@asifalex](https://t.me/asifalex) ❤️.
+A lightweight Telegram bot for managing betting picks and tracking performance statistics – built with ❤️ by [@asifalex](https://t.me/asifalex).
 
 ---
 
 ## ✨ Features
 
-- 🎯 **Add Picks** &nbsp;&nbsp;`/addpick   `
-- ✔️ **Set Results** &nbsp;&nbsp;`/setresult  `
-- ⏳ **Pending Picks** &nbsp;&nbsp;`/pending`
-- 📊 **Stats Dashboard** &nbsp;&nbsp;`/stats  [daily|weekly|monthly]`
-- 🏆 **Leaderboard** &nbsp;&nbsp;`/leaderboard [daily|weekly|monthly]`
-- 🗑️ **Admin Reset** &nbsp;&nbsp;`/resetdb` (with confirmation)
-- 🔐 **Admin-Only Commands** – everyone else gets a polite “🚫 Sorry, admin only” message
+- 🎯 `/addpick` – Submit a new betting pick  
+- ✔️ `/setresult` – Record the outcome of a pick  
+- ⏳ `/pending` – View all active (unresolved) picks  
+- 📊 `/stats [daily|weekly|monthly]` – Analyze performance over time  
+- 🏆 `/leaderboard [daily|weekly|monthly]` – See top performers  
+- 🗑️ `/resetdb` – Reset the database (admin only)  
+- 🔐 Admin-only protection with polite messages for non-admins 🚫  
 
 ---
 
-## 🖥️ Self-Host on a VPS (systemd)
+## 🛠️ Self-Hosting (Ubuntu + systemd)
 
 > Tested on Ubuntu 20.04/22.04 with Python 3.10+
 
-### 1. Clone & install
+### 1. Install Dependencies
 
-```
+```bash
 sudo apt update && sudo apt install -y python3 python3-pip git
 git clone https://github.com/YOUR_USERNAME/betting-tracker-bot.git
 cd betting-tracker-bot
@@ -31,33 +35,35 @@ cd betting-tracker-bot
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
+````
 
-`requirements.txt` should include:
+Your `requirements.txt` should include:
 
 ```
 python-telegram-bot==20.*
 pymongo==4.*
 ```
 
-### 2. Configure
+### 2. Configuration
 
 Edit `config.py`:
 
-```
-BOT_TOKEN  = "YOUR_BOT_TOKEN_HERE"
-ADMIN_IDS  = [123456789]          # telegram user-id(s) allowed to manage bets
+```python
+BOT_TOKEN  = "YOUR_BOT_TOKEN"
+ADMIN_IDS  = [123456789]  # Replace with Telegram user ID(s)
 ```
 
-Make sure your MongoDB Atlas URI in `database.py` is correct.
+Ensure your MongoDB URI in `database.py` is correct and accessible.
 
-### 3. Create a service
+### 3. Setup systemd Service
 
-```
+```bash
 sudo nano /etc/systemd/system/bettingbot.service
 ```
 
-```
+Paste the following:
+
+```ini
 [Unit]
 Description=Betting Tracker Telegram Bot
 After=network.target
@@ -65,7 +71,7 @@ After=network.target
 [Service]
 User=YOUR_SSH_USER
 WorkingDirectory=/path/to/betting-tracker-bot
-ExecStart=/usr/bin/python3 /path/to/betting-tracker-bot/bot.py
+ExecStart=/path/to/betting-tracker-bot/venv/bin/python bot.py
 Restart=always
 RestartSec=5
 
@@ -73,48 +79,60 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-Enable & start:
+Start and enable the service:
 
-```
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable bettingbot
-sudo systemctl start  bettingbot
-sudo systemctl status bettingbot
+sudo systemctl start bettingbot
 ```
 
-View logs:
+Monitor logs:
 
-```
+```bash
 sudo journalctl -fu bettingbot
 ```
 
-The bot restarts automatically on crashes and boots with the server.
+The bot will now start with your server and restart on failures.
 
 ---
 
-## 📝 Command Reference
+## 🧾 Commands Overview
 
-| Command | Purpose |
-|---------|---------|
-| `/start` | Welcome screen |
-| `/commands` | Show full command list |
-| `/addpick   ` | Add a new bet |
-| `/setresult  ` | Record result |
-| `/pending` | List open bets |
-| `/stats  [daily\|weekly\|monthly]` | Performance stats |
-| `/leaderboard [daily\|weekly\|monthly]` | Top bettors |
-| `/resetdb` | Wipe DB (admin only, with confirm) |
+| Command                                 | Description                    |
+| --------------------------------------- | ------------------------------ |
+| `/start`                                | Start the bot and show welcome |
+| `/commands`                             | Display all commands           |
+| `/addpick`                              | Add a new bet                  |
+| `/setresult`                            | Submit the result of a bet     |
+| `/pending`                              | Show unresolved bets           |
+| `/stats [daily\|weekly\|monthly]`       | Show betting statistics        |
+| `/leaderboard [daily\|weekly\|monthly]` | Show user rankings             |
+| `/resetdb`                              | Reset database (admin only)    |
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests, issues and feature requests are welcome!  
-Fork the repo, create a branch, commit your changes and open a PR.
+Pull requests, issues, and feature suggestions are welcome!
+Fork the repo, create a new branch, push your changes, and open a PR.
 
 ---
 
 ## 📜 License
 
-MIT – do what you like, just keep the credits. Enjoy and good luck! 🍀
+MIT License – free to use, modify, and distribute.
+Just don’t forget the credits. Good luck and bet smart! 🍀
+
+```
+
+---
+
+Let me know if you’d like:
+- A badge section (e.g. `build`, `license`, etc.)
+- A logo image at the top
+- A `Dockerfile` setup section  
+- A sample `.env` alternative setup
+
+All easy to add.
 ```
