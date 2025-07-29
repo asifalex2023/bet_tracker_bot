@@ -35,7 +35,7 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     picks = get_pending()
     msg_lines = []
     for doc in picks:
-        short_id = str(doc['_id'])[:6]
+        short_id = str(pick["_id"])[:6]
         msg_lines.append(f"{short_id} | {doc['user']} | Odds: {doc['odds']} | Stake: {doc['stake']}")
     if not msg_lines:
         await update.message.reply_text("🎯 No pending picks.")
