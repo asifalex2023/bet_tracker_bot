@@ -1,9 +1,9 @@
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from config import BOT_TOKEN
 from database import add_pick, set_result, get_pending, get_picks_by_user
 from utils import calculate_stats
-from bson.objectid import ObjectId
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -18,7 +18,7 @@ async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user, odds, stake = context.args
         add_pick(user.strip(), float(odds), float(stake))
         await update.message.reply_text(f"✅ Pick added for {user}, awaiting result.")
-    except Exception as e:
+    except Exception:
         await update.message.reply_text("❗ Usage: /addpick <user> <odds> <stake>")
 
 async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -28,19 +28,19 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
             raise ValueError()
         set_result(pick_id, result.lower())
         await update.message.reply_text("✅ Result updated.")
-    except:
+    except Exception:
         await update.message.reply_text("❗ Usage: /setresult <id> <win/loss>")
 
 async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     picks = get_pending()
     msg_lines = []
     for doc in picks:
-        short_id = str(pick["_id"])[:6]
+        short_id = str(doc["_id"])[:6]
         msg_lines.append(f"{short_id} | {doc['user']} | Odds: {doc['odds']} | Stake: {doc['stake']}")
     if not msg_lines:
         await update.message.reply_text("🎯 No pending picks.")
     else:
-        await update.message.reply_text("🕒 Pending Picks:\n" + "\n".join(msg_lines))
+        await update.message.reply_text("🕒 Pending Picks:\n" + "\n".join(msg_lines), parse_mode=ParseMode.MARKDOWN)
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -59,9 +59,9 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         f"📊 Stats for {user} ({period}):\n"
         f"📈 Picks: {stats['count']}\n"
-        f"💸 Profit: {stats['profit']}\n"
-        f"📊 ROI: {stats['roi']}%\n"
-        f"🎯 Hit Rate: {stats['hit_rate']}%"
+        f"💸 Profit: {stats['profit']:.2f}\n"
+        f"📊 ROI: {stats['roi']:.2f}%\n"
+        f"🎯 Hit Rate: {stats['hit_rate']:.2f}%"
     )
     await update.message.reply_text(msg)
 
