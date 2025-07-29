@@ -22,34 +22,44 @@ def dash_line(label: str, stats: dict) -> str:
 def period_key_to_label(key: str) -> str:
     return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
 
-
-# ────────── command handlers ──────────
+# ───────────── /start ─────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🤖 Welcome!\n"
-        "• /addpick <user> <odds> <stake>\n"
-        "• /setresult <id> <win/loss>\n"
-        "• /pending – show open bets\n"
-        "• /stats <user|all> [daily|weekly|monthly]\n"
-        "• /leaderboard [daily|weekly|monthly]\n"
-        "• /resetdb – admin only",
+        "🎉 *Welcome to the Betting Tracker Bot!*\n"
+        "Created with ❤️ by @asifalex\n\n"
+        "Type /commands to see everything I can do.",
         parse_mode=ParseMode.MARKDOWN
     )
 
 
+# ───────────── /commands (new) ─────────────
+async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📋 *Command list*\n"
+        "• `/addpick <user> <odds> <stake>` – add a new pick\n"
+        "• `/setresult <id> <win/loss>` – close a pick\n"
+        "• `/pending` – show all open bets\n"
+        "• `/stats <user|all> (daily|weekly|monthly)` – performance stats\n"
+        "• `/leaderboard (daily|weekly|monthly)` – top bettors\n"
+        "• `/resetdb` – wipe database (admin only)",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+# ───────────── /addpick (🎲 removed) ─────────────
 async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user, odds, stake = context.args
         add_pick(user.strip(), float(odds), float(stake))
         await update.message.reply_text(
             f"🎯 New pick saved!\n"
-            f"👤 *{user}* | 🎲 *{odds}* | 💵 *{stake}*",
+            f"👤 *{user}* | Odds *{odds}* | 💵 *{stake}*",
             parse_mode=ParseMode.MARKDOWN
         )
     except Exception:
         await update.message.reply_text("⚠️ Usage: /addpick <user> <odds> <stake>")
 
 
+        
 async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         pick_id, result = context.args
@@ -64,10 +74,10 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("⚠️ Usage: /setresult <id> <win/loss>")
 
-
+# ───────────── /pending (🎲 removed) ─────────────
 async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rows = [
-        f"🆔 *{doc['short_id']}* | 👤 *{doc['user']}* | 🎲 {doc['odds']} | 💵 {doc['stake']}"
+        f"🆔 *{doc['short_id']}* | 👤 *{doc['user']}* | Odds {doc['odds']} | 💵 {doc['stake']}"
         for doc in get_pending()
     ]
     text = "⏳ *Pending Picks*\n" + ("\n".join(rows) if rows else "— none —")
@@ -129,8 +139,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "\n".join(user_lines), parse_mode=ParseMode.MARKDOWN
         )
 
-
-# ---------- /leaderboard ----------
+# ───────────── /leaderboard (🎲 removed, numbered) ─────────────
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     period = (context.args[0].lower() if context.args else "weekly")
     if period not in ("daily", "weekly", "monthly"):
@@ -152,7 +161,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for idx, (user, profit, roi, cnt) in enumerate(board[:10], start=1):
         medal = medals[idx - 1] if idx <= len(medals) else "•"
         lines.append(
-            f"{idx}. {medal} *{user}* | 💰 {profit:+.0f} | 📈 {roi:+.1f}% | 🎲 {cnt} picks"
+            f"{idx}. {medal} *{user}* | 💰 {profit:+.0f} | 📈 {roi:+.1f}% | {cnt} picks"
         )
 
     await update.message.reply_text(
@@ -169,10 +178,11 @@ async def resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_database()
     await update.message.reply_text("🗑️ Database wiped clean.")
 
-
-# ────────── bot init ──────────
+# ───────────── bot init (add /commands handler) ─────────────
 app = ApplicationBuilder().token(BOT_TOKEN).build()
+
 app.add_handler(CommandHandler("start",       start))
+app.add_handler(CommandHandler("commands",    commands))     # ← NEW
 app.add_handler(CommandHandler("addpick",     addpick))
 app.add_handler(CommandHandler("setresult",   setresult))
 app.add_handler(CommandHandler("pending",     pending))
