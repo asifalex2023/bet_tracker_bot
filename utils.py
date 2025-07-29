@@ -1,22 +1,27 @@
+# utils.py
 def calculate_stats(picks):
-    total_stake = 0
-    profit = 0
-    win_count = 0
+    total_stake = profit = win_count = 0.0
 
-    for odds, stake, result in picks:
+    for doc in picks:
+        odds   = float(doc.get("odds", 0))
+        stake  = float(doc.get("stake", 0))
+        result = str(doc.get("result", "")).lower()
+
         total_stake += stake
-        if result.lower() == "win":
+        if result == "win":
             profit += stake * (odds - 1)
             win_count += 1
-        elif result.lower() == "loss":
+        elif result == "loss":
             profit -= stake
 
-    hit_rate = (win_count / len(picks)) * 100 if picks else 0
-    roi = (profit / total_stake) * 100 if total_stake > 0 else 0
+    count    = len(picks)
+    hit_rate = (win_count / count) * 100 if count else 0
+    roi      = (profit / total_stake) * 100 if total_stake else 0
 
     return {
-        "count": len(picks),
-        "profit": round(profit, 2),
-        "roi": round(roi, 2),
-        "hit_rate": round(hit_rate, 2)
+        "count":   count,
+        "profit":  round(profit, 2),
+        "roi":     round(roi, 2),   # keep old key so nothing breaks
+        "ev":      round(roi, 2),   # new alias that the bot will show
+        "hit_rate":round(hit_rate, 2)
     }
