@@ -16,14 +16,35 @@ from datetime import datetime
 
 # ────────── helpers ──────────
 def money(val: float) -> str:
-    """+123 → $+123   –45.5 → $-45.5 (no decimals if .0)"""
+    """+123 → $+123, –45.5 → $-45.5 (no decimals if .0)."""
     whole = int(val)
     return f"${whole:+}" if val.is_integer() else f"${val:+.1f}"
 
 def period_line(label: str, profit: float, picks: int, roi: float) -> str:
-    """Return the ‘├─ Week: …’ style row used in the new design."""
+    """Return the ‘├─ Week: …’ style row used in the /stats all layout."""
     icon = "✅" if profit > 0 else "❌" if profit < 0 else "➖"
-    return f"├─ {label}: {money(profit)} | {picks} pick{'s' if picks!=1 else ''} | {icon} {roi:+.1f}%"
+    return (
+        f"├─ {label}: {money(profit)} | {picks} pick{'s' if picks != 1 else ''} | "
+        f"{icon} {roi:+.1f}%"
+    )
+
+# NEW ↓↓↓ ──────────────────────────────────────────────────────────────
+def dash_line(label: str, stats: dict) -> str:
+    """
+    Single-line summary used by:
+      • /stats <user> daily|weekly|monthly
+      • /stats all daily|weekly|monthly
+    Example: ➤ Today: $+120 | 3 picks | 📈 +23.4%
+    """
+    return (
+        f"➤ {label}: {money(stats['profit'])} | {stats['count']} pick"
+        f"{'s' if stats['count'] != 1 else ''} | 📈 {stats['roi']:+.1f}%"
+    )
+
+def period_key_to_label(key: str) -> str:
+    """Convert an internal period key to a human label."""
+    return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
+# ──────────────────────────────────────────────────────────────────────
 
 
 # ───────────── admin guard ─────────────

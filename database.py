@@ -14,12 +14,10 @@ db         = client["bet_tracker"]
 collection = db["picks"]
 
 # ────────── helpers ──────────
-
 def generate_short_id() -> str:
     """
-    Return a UNIQUE two–digit string (“01” … “99”).
-    We keep a tiny counter document in Mongo so that IDs
-    are sequential and never clash.
+    Return a UNIQUE two–digit string (“00” … “99”).
+    Uses a counter document in Mongo to stay sequential and avoid clashes.
     """
     counter = db["counters"].find_one_and_update(
         {"_id": "pick_id"},
@@ -27,10 +25,10 @@ def generate_short_id() -> str:
         upsert=True,
         return_document=True,
     )
-    seq = (counter["seq"] - 1) % 100          # wrap after 99 → 00
-    short_id = f"{seq:02}"                    # always two digits
+    seq = (counter["seq"] - 1) % 100             # wrap after 99 → 00
+    short_id = f"{seq:02}"
 
-    # safety-net: make sure the id isn’t in use; advance until it’s free
+    # safety-net: keep advancing until we hit an unused id
     while collection.find_one({"short_id": short_id}):
         counter = db["counters"].find_one_and_update(
             {"_id": "pick_id"},
@@ -42,7 +40,7 @@ def generate_short_id() -> str:
         short_id = f"{seq:02}"
     return short_id
 
-# ────────── CRUD functions used by the bot ──────────
+# ────────── CRUD functions ──────────
 def add_pick(user: str, odds: float, stake: float) -> bool:
     short_id = generate_short_id()
     while collection.find_one({"short_id": short_id}):
@@ -60,7 +58,7 @@ def add_pick(user: str, odds: float, stake: float) -> bool:
     return True
 
 def set_result(pick_id: str, result: str) -> bool:
-    # accept either the 6-char short-id or the 24-char _id
+    # accept either 24-char ObjectId or our 2-digit short id
     if len(pick_id) == 24:
         try:
             flt = {"_id": ObjectId(pick_id)}
@@ -77,6 +75,7 @@ def get_pending():
 
 def get_picks_by_user(user: str, period: str = "daily"):
     now = datetime.utcnow()
+
     if period == "daily":
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == "weekly":
@@ -84,8 +83,8 @@ def get_picks_by_user(user: str, period: str = "daily"):
     elif period == "monthly":
         start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     elif period == "lifetime":
-    start = datetime.min   # everything ever    
-    else:                              # fallback to daily
+        start = datetime.min               # everything ever
+    else:                                  # fallback to daily
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     return collection.find(
@@ -96,11 +95,9 @@ def get_picks_by_user(user: str, period: str = "daily"):
         }
     )
 
-# ────────── extras for leaderboard / admin ──────────
+# ────────── helpers for leaderboard / admin ──────────
 def get_all_users():
-    return sorted(
-        collection.distinct("user", {"result": {"$ne": "pending"}})
-    )
+    return sorted(collection.distinct("user", {"result": {"$ne": "pending"}}))
 
 def reset_database():
     collection.delete_many({})
