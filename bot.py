@@ -177,6 +177,7 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ─────────── LEADERBOARD ───────────
+
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period via command or button
@@ -227,17 +228,14 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     # ───────── compose the message ─────────
-txt = (
-    f"{title}\n"
-    f"{updated_stamp()}\n"
-    "```text\n"
-    "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
-    + "\n".join(body_lines) +       # table rows
-    "\n```
-)
-
-
-
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +       # table rows
+        "\n```
+    )
 
     # inline buttons
     if period == "weekly":
@@ -255,13 +253,6 @@ txt = (
         await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
-
-async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    mapping = {"lb_week": "weekly", "lb_month": "monthly", "lb_life": "lifetime"}
-    context.data = mapping.get(update.callback_query.data, "weekly")
-    await leaderboard(update, context)
-
 
 # ─────────── resetdb, summary, confirm_resetdb ───────────
 #  <–– keep your existing implementations ––>
