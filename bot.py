@@ -231,10 +231,10 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = (
         f"{title}\n"
         f"{updated_stamp()}\n"
-        "```text\n"
+        "```
         "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
-        + "\n".join(body_lines) +       # table rows
-        "\n```
+        + "\n".join(body_lines) +
+        "\n```"
     )
 
     # inline buttons
