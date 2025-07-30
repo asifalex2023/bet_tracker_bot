@@ -182,7 +182,7 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period via command or button
     if update.message:
-        period = context.args.lower() if context.args else "weekly"
+        period = context.args[0].lower() if context.args else "weekly"
     else:
         period = getattr(context, "data", "weekly")
 
@@ -227,14 +227,14 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for i, r in enumerate(rows)
     ]
 
-    # ───────── compose the message ─────────
+    # compose the message
     txt = (
         f"{title}\n"
         f"{updated_stamp()}\n"
-        "```text\n"
-        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
-        + "\n".join(body_lines) +
-        "\n```
+        "```
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n" +
+        "\n".join(body_lines) +
+        "\n```"
     )
 
     # inline buttons
