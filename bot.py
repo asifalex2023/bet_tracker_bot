@@ -88,6 +88,9 @@ def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
         icon = "🔥" if last_type == "win" and streak > 1 else "✔️" if last_type == "win" else "❌"
         streak_txt = f"{icon}{streak}{'W' if last_type=='win' else 'L'}"
     return f"{wins}-{losses}", streak_txt
+# ADD this helper near the other helpers
+def updated_stamp() -> str:
+    return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -316,22 +319,29 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not rows:
         await update.message.reply_text("📉 No finished picks yet.")
         return
-
-    # build the pretty table
-    medals = ["🥇", "🥈", "🥉"]
-    lines = []
-    for idx, r in enumerate(rows, start=1):
-        medal = medals[idx-1] if idx <= 3 else "  "  # thin spaces to align
-        lines.append(
-            f"{medal} {r['user']:<8} {money(r['profit']):>6}  "
-            f"{r['roi']:+6.1f}%  {r['picks']:^3}  {r['wl']:<4}  {r['streak']}"
-        )
-
-    txt = (
-        f"{title}\n"
-        "Rank | Bettor | P/L ($) | ROI% | Picks | W-L | Streak\n"
-        + "\n".join(lines)
+    # ───────── build the pretty table ─────────
+medals = ["🥇", "🥈", "🥉"]
+lines  = []
+for idx, r in enumerate(rows, start=1):
+    medal = medals[idx - 1] if idx <= 3 else "  "
+    lines.append(
+        f"{medal:<2} {r['user']:<10} {money(r['profit']):>8} "
+        f"{r['roi']:+7.1f}%  {r['picks']:^3}  {r['wl']:<5} {r['streak']}"
     )
+
+# ───────── compose the message ─────────
+def updated_stamp() -> str:
+    return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
+
+header = (
+    f"{title}\n"
+    f"{updated_stamp()}\n"
+    "```
+)
+table_head  = "Rank Bettor        P/L    ROI%  Pk  W-L  Streak"
+table_body  = "\n".join(lines)
+footer = "```"                                         # close code block
+txt = "\n".join([header, table_head, table_body, footer])
 
     # inline keyboard for quick switching
     kb = InlineKeyboardMarkup([[
