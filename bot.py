@@ -13,6 +13,8 @@ from database import (
 )
 from utils    import calculate_stats
 from datetime import datetime
+from zoneinfo import ZoneInfo                # add alongside other imports
+DHAKA = ZoneInfo("Asia/Dhaka")
 
 # ────────── helpers ──────────
 def money(val: float) -> str:
@@ -217,7 +219,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "*🧾 INDIVIDUAL BREAKDOWN*",
             "",
             "\n".join(user_sections),
-            f"_Updated: {datetime.utcnow():%Y-%m-%d %I:%M %p}_"
+            f"_Updated: {datetime.now(DHAKA):%Y-%m-%d %I:%M %p}_"
         ]
 
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)

@@ -1,6 +1,9 @@
 # database.py
 from pymongo import MongoClient
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo        # ← NEW
+
+DHAKA = ZoneInfo("Asia/Dhaka")       # ← NEW
 from bson import ObjectId
 import random
 import string
