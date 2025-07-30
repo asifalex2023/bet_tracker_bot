@@ -12,17 +12,18 @@ from database import (
     get_picks_by_user, get_all_users, reset_database
 )
 from utils    import calculate_stats
+from datetime import datetime
 
+# ────────── helpers ──────────
+def money(val: float) -> str:
+    """+123 → $+123   –45.5 → $-45.5 (no decimals if .0)"""
+    whole = int(val)
+    return f"${whole:+}" if val.is_integer() else f"${val:+.1f}"
 
-# ────────── helper functions ──────────
-def dash_line(label: str, stats: dict) -> str:
-    profit = f"{stats['profit']:+.0f}"
-    roi    = f"{stats['ev']:+.1f}%"
-    return f"➤ {label}: {profit} | {stats['count']} picks | 📈 {roi}"
-
-
-def period_key_to_label(key: str) -> str:
-    return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
+def period_line(label: str, profit: float, picks: int, roi: float) -> str:
+    """Return the ‘├─ Week: …’ style row used in the new design."""
+    icon = "✅" if profit > 0 else "❌" if profit < 0 else "➖"
+    return f"├─ {label}: {money(profit)} | {picks} pick{'s' if picks!=1 else ''} | {icon} {roi:+.1f}%"
 
 
 # ───────────── admin guard ─────────────
@@ -139,24 +140,68 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keys = ("daily", "weekly", "monthly")
+    # ─────────── NEW ‘/stats all’ block ───────────
     if target == "all":
-        users_block = []
+        # aggregate over *all* finished picks in the DB
+        total_profit = total_stake = wins = losses = 0
+        total_picks  = 0
+        user_sections = []
+
         for user in get_all_users():
-            block = [
-                dash_line(period_key_to_label(k), stats_for(user, k)) for k in keys
+            # lifetime numbers for this user
+            picks_life = list(get_picks_by_user(user, "lifetime"))
+            if not picks_life:
+                continue
+
+            stats_life = calculate_stats(picks_life)
+            profit_life = stats_life["profit"]
+            ev_life     = stats_life["roi"]
+
+            # daily / weekly / monthly
+            p_today   = calculate_stats(list(get_picks_by_user(user, "daily")))
+            p_week    = calculate_stats(list(get_picks_by_user(user, "weekly")))
+            p_month   = calculate_stats(list(get_picks_by_user(user, "monthly")))
+
+            # build the 4-row section for this user
+            section = [
+                f"**{user}** » {'📈' if profit_life>0 else '📉'} {money(profit_life)} (Lifetime)",
+                period_line("Today",  p_today["profit"],  p_today["count"],  p_today["roi"]),
+                period_line("Week",   p_week["profit"],   p_week["count"],   p_week["roi"]),
+                period_line("Month",  p_month["profit"],  p_month["count"],  p_month["roi"]),
+                f"└─ Lifetime: {money(profit_life)} | {stats_life['count']} pick{'s' if stats_life['count']!=1 else ''} | {ev_life:.2f} EV",
+                ""
             ]
-            users_block.append(f"👤 *{user}*\n" + "\n".join(block))
-        await update.message.reply_text(
-            "\n\n".join(users_block) if users_block else "📉 No finished picks yet.",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-    else:
-        user_lines = [
-            dash_line(period_key_to_label(k), stats_for(target, k)) for k in keys
+            user_sections.append("\n".join(section))
+
+            # accumulate for group summary
+            total_profit += profit_life
+            total_stake  += sum(float(doc["stake"]) for doc in picks_life)
+            wins         += sum(1 for doc in picks_life if doc["result"]=="win")
+            losses       += sum(1 for doc in picks_life if doc["result"]=="loss")
+            total_picks  += len(picks_life)
+
+        win_rate = (wins / total_picks) * 100 if total_picks else 0
+        avg_roi  = (total_profit / total_stake) * 100 if total_stake else 0
+
+        msg = [
+            "🔋 *EV TRACKER - COMPREHENSIVE STATS*",
+            "/stats all",
+            "",
+            "*🏆 GROUP SUMMARY*",
+            f"✅ **Net Profit**: {money(total_profit)}",
+            f"📊 **Total Picks**: {total_picks}",
+            f"📈 **Win Rate**: {win_rate:.0f}% ({wins}W-{losses}L)",
+            f"🕰️ **Avg ROI**: {avg_roi:+.1f}%",
+            "",
+            "*🧾 INDIVIDUAL BREAKDOWN*",
+            "",
+            "\n".join(user_sections),
+            f"_Updated: {datetime.utcnow():%Y-%m-%d %I:%M %p}_"
         ]
-        await update.message.reply_text(
-            "\n".join(user_lines), parse_mode=ParseMode.MARKDOWN
-        )
+
+        await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+        return
+
 
 
 @admin_required

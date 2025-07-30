@@ -83,6 +83,8 @@ def get_picks_by_user(user: str, period: str = "daily"):
         start = now - timedelta(days=7)
     elif period == "monthly":
         start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif period == "lifetime":
+    start = datetime.min   # everything ever    
     else:                              # fallback to daily
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
