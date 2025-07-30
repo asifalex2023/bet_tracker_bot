@@ -1,8 +1,11 @@
 # bot.py
+# bot.py  – imports
 from functools             import wraps
-from telegram               import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.constants     import ParseMode
-from telegram.ext           import (
+from datetime              import datetime, timedelta     # ← add  timedelta
+from zoneinfo              import ZoneInfo
+from telegram              import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants    import ParseMode
+from telegram.ext          import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 )
 
