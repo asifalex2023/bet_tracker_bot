@@ -78,20 +78,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN
     )
 
-
 # ───────────── /commands ─────────────
 async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
+    text = (
         "📋 *Command list*\n"
         "• `/addpick <user> <odds> <stake>` – add a new pick\n"
         "• `/setresult <id> <win/loss>` – close a pick\n"
         "• `/pending` – show all open bets\n"
         "• `/stats <user|all> (daily|weekly|monthly)` – performance stats\n"
         "• `/leaderboard (daily|weekly|monthly)` – top bettors\n"
-        "• `/resetdb` – wipe database (admin only)",
         "• `/summary` – condensed group overview\n"
-        parse_mode=ParseMode.MARKDOWN
+        "• `/resetdb` – wipe database (admin only)"
     )
+    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
 
 
 # ───────────── protected commands ─────────────
