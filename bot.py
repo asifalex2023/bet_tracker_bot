@@ -328,7 +328,6 @@ for idx, r in enumerate(rows, start=1):
         f"{medal:<2} {r['user']:<10} {money(r['profit']):>8} "
         f"{r['roi']:+7.1f}%  {r['picks']:^3}  {r['wl']:<5} {r['streak']}"
     )
-
 # ───────── compose the message ─────────
 def updated_stamp() -> str:
     return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
@@ -336,12 +335,15 @@ def updated_stamp() -> str:
 header = (
     f"{title}\n"
     f"{updated_stamp()}\n"
-    "```
+    "```"                           # ← closing quote **added**
 )
+
 table_head  = "Rank Bettor        P/L    ROI%  Pk  W-L  Streak"
 table_body  = "\n".join(lines)
-footer = "```"                                         # close code block
+footer      = "```
+
 txt = "\n".join([header, table_head, table_body, footer])
+
 
     # inline keyboard for quick switching
     kb = InlineKeyboardMarkup([[
