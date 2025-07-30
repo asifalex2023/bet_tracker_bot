@@ -46,6 +46,12 @@ def dash_line(label: str, stats: dict) -> str:
 def period_key_to_label(key: str) -> str:
     """Convert an internal period key to a human label."""
     return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
+def rank_users(users_stats, key, reverse=True):
+    """Return user name and the chosen metric’s value."""
+    user, value = max(users_stats.items(), key=lambda x: x[1][key]) if reverse \
+                  else min(users_stats.items(), key=lambda x: x[1][key])
+    return user, value[key]
+
 # ──────────────────────────────────────────────────────────────────────
 
 
@@ -83,6 +89,7 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/stats <user|all> (daily|weekly|monthly)` – performance stats\n"
         "• `/leaderboard (daily|weekly|monthly)` – top bettors\n"
         "• `/resetdb` – wipe database (admin only)",
+        "• `/summary` – condensed group overview\n"
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -292,6 +299,71 @@ async def confirm_resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("✅ Reset cancelled.")
 
+@admin_required
+async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Group-wide EV tracker summary."""
+    # gather lifetime stats for every user that has finished picks
+    users_stats = {}
+    total_profit = total_picks = wins = 0
+    total_stake  = 0.0
+
+    for user in get_all_users():
+        picks = list(get_picks_by_user(user, "lifetime"))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+
+        # save for later ranking
+        users_stats[user] = {
+            "profit": st["profit"],
+            "ev":     st["ev"],
+        }
+
+        # group aggregates
+        total_profit += st["profit"]
+        total_picks  += st["count"]
+        wins         += round(st["hit_rate"] * st["count"] / 100)
+        total_stake  += sum(float(p["stake"]) for p in picks)
+
+    losses   = total_picks - wins
+    win_rate = (wins / total_picks) * 100 if total_picks else 0
+    avg_roi  = (total_profit / total_stake) * 100 if total_stake else 0
+    avg_ev   = (sum(u["ev"] for u in users_stats.values()) / len(users_stats)
+                if users_stats else 0)
+
+    # performance highlights
+    top_earner, top_profit     = rank_users(users_stats, "profit",  True)
+    worst_draw, worst_profit   = rank_users(users_stats, "profit",  False)
+    value_king, top_ev         = rank_users(users_stats, "ev",      True)
+
+    # build member list
+    member_lines = [
+        f"{u} » {'📈' if s['profit']>0 else '📉'} {money(s['profit'])} | ⚖️{s['ev']:.2f} EV"
+        for u, s in users_stats.items()
+    ]
+
+    msg = [
+        "🔋 *EV TRACKER - GROUP SUMMARY*",
+        "",
+        "*📊 CORE METRICS*",
+        f"✅ **Net Profit**: {money(total_profit)}",
+        f"📈 **Win Rate**: {win_rate:.0f}% ({wins}W-{losses}L)",
+        f"🧠 **Avg EV**: {avg_ev:.2f}",
+        f"💰 **Avg ROI**: {avg_roi:+.1f}%",
+        f"🎯 **Total Picks**: {total_picks}",
+        "",
+        "*🏅 PERFORMANCE HIGHLIGHTS*",
+        f"🥇 **Top Earner**: {top_earner} ({money(top_profit)})",
+        f"📉 **Biggest Drawdown**: {worst_draw} ({money(worst_profit)})",
+        f"⚡ **Value King**: {value_king} ({top_ev:.2f} EV)",
+        "",
+        "*👥 MEMBER PERFORMANCE (Lifetime)*",
+        *member_lines,
+        "",
+        f"_Updated: {datetime.now(DHAKA):%Y-%m-%d %I:%M %p} | /stats all for details_",
+    ]
+
+    await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
 
 # ───────────── bot init ─────────────
 app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -304,6 +376,7 @@ app.add_handler(CommandHandler("pending",     pending))
 app.add_handler(CommandHandler("stats",       stats))
 app.add_handler(CommandHandler("leaderboard", leaderboard))
 app.add_handler(CommandHandler("resetdb",     resetdb))
+app.add_handler(CommandHandler("summary", summary))
 app.add_handler(CallbackQueryHandler(confirm_resetdb, pattern="^resetdb_"))
 
 app.run_polling()
