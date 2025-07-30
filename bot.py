@@ -226,13 +226,18 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for i, r in enumerate(rows)
     ]
 
-    txt = (
-        f"{title}\n{updated_stamp()}\n"
-        "```text\n"
-        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
-        + "\n".join(body_lines) +
-        "\n```
-    )
+    # ───────── compose the message ─────────
+txt = (
+    f"{title}\n"
+    f"{updated_stamp()}\n"
+    "```text\n"
+    "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+    + "\n".join(body_lines) +       # table rows
+    "\n```
+)
+
+
+
 
     # inline buttons
     if period == "weekly":
