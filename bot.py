@@ -52,6 +52,41 @@ def rank_users(users_stats, key, reverse=True):
                   else min(users_stats.items(), key=lambda x: x[1][key])
     return user, value[key]
 
+# ────────── leaderboard helpers ──────────
+
+def week_meta(now: datetime) -> tuple[str, str]:
+    """Return ('WEEK 30', 'Jul 28 – Aug 3') for the given Dhaka date."""
+    monday = now - timedelta(days=now.weekday())            # Monday of this week
+    sunday = monday + timedelta(days=6)
+    week_no = now.isocalendar().week
+    range_txt = f"{monday:%b %d} – {sunday:%b %d}"
+    return f"WEEK {week_no}", range_txt
+
+def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
+    """Return '3-2'  and  '🔥3W' / '❌2L' / '✔️1W' / '—' """
+    wins  = sum(1 for p in picks if p["result"] == "win")
+    losses = sum(1 for p in picks if p["result"] == "loss")
+    # streak (latest picks first)
+    streak = 0
+    last_type = None
+    for p in sorted(picks, key=lambda x: x["date"], reverse=True):
+        if p["result"] not in ("win", "loss"):
+            break
+        if last_type is None:
+            last_type = p["result"]
+            streak = 1
+        elif p["result"] == last_type:
+            streak += 1
+        else:
+            break
+    if streak == 0:
+        streak_txt = "—"
+    else:
+        icon = "🔥" if last_type == "win" and streak > 1 else "✔️" if last_type == "win" else "❌"
+        streak_txt = f"{icon}{streak}{'W' if last_type=='win' else 'L'}"
+    return f"{wins}-{losses}", streak_txt
+
+
 # ──────────────────────────────────────────────────────────────────────
 
 
@@ -85,7 +120,7 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/addpick <user> <odds> <stake>` – add a new pick\n"
         "• `/setresult <id> <win/loss>` – close a pick\n"
         "• `/pending` – show all open bets\n"
-        "• `/stats <user|all> (daily|weekly|monthly)` – performance stats\n"
+        "• `/stats <all> (all data at once)` – performance stats\n"
         "• `/leaderboard (daily|weekly|monthly)` – top bettors\n"
         "• `/summary` – condensed group overview\n"
         "• `/resetdb` – wipe database (admin only)"
@@ -141,7 +176,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # -------------------------------------------------------------
     if not context.args:
         await update.message.reply_text(
-            "⚠️ Usage: /stats <user|all> [daily|weekly|monthly]"
+            " 📊 To get all your usage data at once, type: /stats all"
         )
         return
     target = context.args[0].lower()
@@ -233,36 +268,97 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 
-
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # … body unchanged …
-    period = (context.args[0].lower() if context.args else "weekly")
-    if period not in ("daily", "weekly", "monthly"):
-        await update.message.reply_text("⚠️ Usage: /leaderboard [daily|weekly|monthly]")
-        return
-    board = []
-    for user in get_all_users():
-        s = calculate_stats(list(get_picks_by_user(user, period)))
-        board.append((user, s["profit"], s["ev"], s["count"]))
-    board.sort(key=lambda x: x[1], reverse=True)
+    # period can come either from command args or from an inline button
+    period = (context.args[0].lower() if context.args else "weekly") \
+             if isinstance(update, Update) and update.message else context.data
 
-    if not board:
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # title / date range text
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD - {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD - {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD - LIFETIME"
+
+    # collect stats for every user
+    rows = []
+    for user in get_all_users():
+        picks = list(get_picks_by_user(user, period if period != "lifetime" else "lifetime"))
+        if not picks:
+            continue
+        st      = calculate_stats(picks)
+        profit  = st["profit"]
+        roi     = st["roi"]
+        wl, streak = wl_and_streak(picks)
+        rows.append({
+            "user":   user,
+            "profit": profit,
+            "roi":    roi,
+            "picks":  st["count"],
+            "wl":     wl,
+            "streak": streak,
+        })
+
+    # sort by P/L desc
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
         await update.message.reply_text("📉 No finished picks yet.")
         return
 
-    medals = ["🥇", "🥈", "🥉"] + ["🏅"] * 7
-    lines  = []
-    for idx, (user, profit, roi, cnt) in enumerate(board[:10], start=1):
-        medal = medals[idx - 1] if idx <= len(medals) else "•"
+    # build the pretty table
+    medals = ["🥇", "🥈", "🥉"]
+    lines = []
+    for idx, r in enumerate(rows, start=1):
+        medal = medals[idx-1] if idx <= 3 else "  "  # thin spaces to align
         lines.append(
-            f"{idx}. {medal} *{user}* | 💰 {profit:+.0f} | 📈 {roi:+.1f}% | {cnt} picks"
+            f"{medal} {r['user']:<8} {money(r['profit']):>6}  "
+            f"{r['roi']:+6.1f}%  {r['picks']:^3}  {r['wl']:<4}  {r['streak']}"
         )
 
-    await update.message.reply_text(
-        f"🏆 *Leaderboard* – {period_key_to_label(period)}\n" + "\n".join(lines),
-        parse_mode=ParseMode.MARKDOWN
+    txt = (
+        f"{title}\n"
+        "Rank | Bettor | P/L ($) | ROI% | Picks | W-L | Streak\n"
+        + "\n".join(lines)
     )
+
+    # inline keyboard for quick switching
+    kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
+        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
+    ]]) if period == "weekly" else InlineKeyboardMarkup([[
+        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
+        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
+    ]]) if period == "monthly" else InlineKeyboardMarkup([[
+        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
+        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
+    ]])
+
+    # send or edit message depending on origin
+    if update.message:
+        await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+    else:
+        await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
+
+# ---------- callback dispatcher ----------
+async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # map button → period and reuse the same code above
+    mapping = {"lb_week": "weekly", "lb_month": "monthly", "lb_life": "lifetime"}
+    period  = mapping.get(update.callback_query.data, "weekly")
+    # store in context so leaderboard() can see it
+    context.data = period
+    await leaderboard(update, context)
+
+
 
 
 @admin_required
@@ -378,5 +474,6 @@ app.add_handler(CommandHandler("leaderboard", leaderboard))
 app.add_handler(CommandHandler("resetdb",     resetdb))
 app.add_handler(CommandHandler("summary", summary))
 app.add_handler(CallbackQueryHandler(confirm_resetdb, pattern="^resetdb_"))
+app.add_handler(CallbackQueryHandler(leaderboard_cb, pattern="^lb_"))
 
 app.run_polling()
