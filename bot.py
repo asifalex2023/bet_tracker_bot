@@ -272,108 +272,103 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
         return
-
-
+    
+# MAIN LEADERBOARD HANDLER (replace the old one)
+# -------------------------------------------------
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # period can come either from command args or from an inline button
-    period = (context.args[0].lower() if context.args else "weekly") \
-             if isinstance(update, Update) and update.message else context.data
+    """/leaderboard [weekly|monthly|lifetime]  or button callback"""
+    # figure out period
+    if update.message:                                  # normal command
+        period = context.args.lower() if context.args else "weekly"
+    else:                                               # came from button
+        period = context.data
 
     if period not in ("weekly", "monthly", "lifetime"):
-        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        await update.message.reply_text(
+            "⚠️ Usage: /leaderboard [weekly|monthly|lifetime]"
+        )
         return
 
-    # title / date range text
+    # title for header
     now_local = datetime.now(DHAKA)
     if period == "weekly":
         wk, dr = week_meta(now_local)
-        title = f"📊 LEADERBOARD - {wk} ({dr})"
+        title  = f"📊 LEADERBOARD – {wk} ({dr})"
     elif period == "monthly":
-        title = f"📊 LEADERBOARD - {now_local:%B %Y}"
+        title  = f"📊 LEADERBOARD – {now_local:%B %Y}"
     else:
-        title = "📊 LEADERBOARD - LIFETIME"
+        title  = "📊 LEADERBOARD – LIFETIME"
 
-    # collect stats for every user
+    # collect per–user stats
     rows = []
     for user in get_all_users():
-        picks = list(get_picks_by_user(user, period if period != "lifetime" else "lifetime"))
+        picks = list(get_picks_by_user(user, "lifetime" if period=="lifetime" else period))
         if not picks:
             continue
-        st      = calculate_stats(picks)
-        profit  = st["profit"]
-        roi     = st["roi"]
-        wl, streak = wl_and_streak(picks)
+        st              = calculate_stats(picks)
+        wl, streak      = wl_and_streak(picks)
         rows.append({
             "user":   user,
-            "profit": profit,
-            "roi":    roi,
+            "profit": st["profit"],
+            "roi":    st["roi"],
             "picks":  st["count"],
             "wl":     wl,
             "streak": streak,
         })
-
-    # sort by P/L desc
     rows.sort(key=lambda x: x["profit"], reverse=True)
 
     if not rows:
         await update.message.reply_text("📉 No finished picks yet.")
         return
-    # ───────── build the pretty table ─────────
-medals = ["🥇", "🥈", "🥉"]
-lines  = []
-for idx, r in enumerate(rows, start=1):
-    medal = medals[idx - 1] if idx <= 3 else "  "
-    lines.append(
-        f"{medal:<2} {r['user']:<10} {money(r['profit']):>8} "
-        f"{r['roi']:+7.1f}%  {r['picks']:^3}  {r['wl']:<5} {r['streak']}"
+
+    # ---------- pretty table (monospace) ----------
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = []
+    for idx, r in enumerate(rows, start=1):
+        medal = medals[idx-1] if idx <= 3 else "  "
+        body_lines.append(
+            f"{medal:<2} {r['user']:<10} {money(r['profit']):>8} "
+            f"{r['roi']:+7.1f}%  {r['picks']:^3}  {r['wl']:<5} {r['streak']}"
+        )
+
+    def stamp() -> str:
+        return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
+
+    message = (
+        f"{title}\n"
+        f"{stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```
     )
 
-# ───────── compose the message ─────────
-def updated_stamp() -> str:
-    return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
+    # ---------- inline keyboard ----------
+    if period == "weekly":
+        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📆 Monthly", callback_data="lb_month"),
+                                    InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
+    elif period == "monthly":
+        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",  callback_data="lb_week"),
+                                    InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
+    else:  # lifetime
+        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",  callback_data="lb_week"),
+                                    InlineKeyboardButton("📆 Monthly", callback_data="lb_month")]])
 
-header = (
-    f"{title}\n"
-    f"{updated_stamp()}\n"
-    "```
-)
-
-table_head = "Rank Bettor        P/L    ROI%  Pk  W-L  Streak"
-table_body = "\n".join(lines)
-
-footer = "```"                 # ← this line was missing its final quote
-
-txt = "\n".join([header, table_head, table_body, footer])
-
-    # inline keyboard for quick switching
-    kb = InlineKeyboardMarkup([[
-        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
-        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
-    ]]) if period == "weekly" else InlineKeyboardMarkup([[
-        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
-        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
-    ]]) if period == "monthly" else InlineKeyboardMarkup([[
-        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
-        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
-    ]])
-
-    # send or edit message depending on origin
+    # send or edit
     if update.message:
-        await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+        await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
     else:
-        await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+        await update.callback_query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
 
 
-# ---------- callback dispatcher ----------
+# -------------------------------------------------
+# CALLBACK HANDLER (add / keep)
+# -------------------------------------------------
 async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # map button → period and reuse the same code above
-    mapping = {"lb_week": "weekly", "lb_month": "monthly", "lb_life": "lifetime"}
-    period  = mapping.get(update.callback_query.data, "weekly")
-    # store in context so leaderboard() can see it
-    context.data = period
+    mapping  = {"lb_week": "weekly", "lb_month": "monthly", "lb_life": "lifetime"}
+    context.data = mapping.get(update.callback_query.data, "weekly")
     await leaderboard(update, context)
-
 
 
 
