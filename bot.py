@@ -1,138 +1,138 @@
 # bot.py
-from functools import wraps
-from datetime  import datetime, timedelta
-from zoneinfo  import ZoneInfo
-
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.constants import ParseMode
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    ContextTypes,
+# bot.py  – imports
+from functools             import wraps
+from datetime              import datetime, timedelta     # ← add  timedelta
+from zoneinfo              import ZoneInfo
+from telegram              import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants    import ParseMode
+from telegram.ext          import (
+    ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 )
 
 from config   import BOT_TOKEN, ADMIN_IDS
 from database import (
     add_pick, set_result, get_pending,
-    get_picks_by_user, get_all_users, reset_database,
+    get_picks_by_user, get_all_users, reset_database
 )
 from utils    import calculate_stats
-
-
-# ──────────── constants & helpers ────────────
+from datetime import datetime
+from zoneinfo import ZoneInfo                # add alongside other imports
 DHAKA = ZoneInfo("Asia/Dhaka")
 
-
+# ────────── helpers ──────────
 def money(val: float) -> str:
+    """+123 → $+123, –45.5 → $-45.5 (no decimals if .0)."""
     whole = int(val)
     return f"${whole:+}" if val.is_integer() else f"${val:+.1f}"
 
-
 def period_line(label: str, profit: float, picks: int, roi: float) -> str:
+    """Return the ‘├─ Week: …’ style row used in the /stats all layout."""
     icon = "✅" if profit > 0 else "❌" if profit < 0 else "➖"
     return (
-        f"├─ {label}: {money(profit)} | {picks} pick"
-        f"{'s' if picks != 1 else ''} | {icon} {roi:+.1f}%"
+        f"├─ {label}: {money(profit)} | {picks} pick{'s' if picks != 1 else ''} | "
+        f"{icon} {roi:+.1f}%"
     )
 
-
+# NEW ↓↓↓ ──────────────────────────────────────────────────────────────
 def dash_line(label: str, stats: dict) -> str:
+    """
+    Single-line summary used by:
+      • /stats <user> daily|weekly|monthly
+      • /stats all daily|weekly|monthly
+    Example: ➤ Today: $+120 | 3 picks | 📈 +23.4%
+    """
     return (
         f"➤ {label}: {money(stats['profit'])} | {stats['count']} pick"
         f"{'s' if stats['count'] != 1 else ''} | 📈 {stats['roi']:+.1f}%"
     )
 
+def period_key_to_label(key: str) -> str:
+    """Convert an internal period key to a human label."""
+    return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
+def rank_users(users_stats, key, reverse=True):
+    """Return user name and the chosen metric’s value."""
+    user, value = max(users_stats.items(), key=lambda x: x[1][key]) if reverse \
+                  else min(users_stats.items(), key=lambda x: x[1][key])
+    return user, value[key]
 
-def period_key_to_label(k: str) -> str:
-    return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[k]
+# ────────── leaderboard helpers ──────────
 
-
-def rank_users(user_stats: dict, key: str, reverse=True):
-    user, val = max(user_stats.items(), key=lambda x: x[1][key]) if reverse \
-                else min(user_stats.items(), key=lambda x: x[1][key])
-    return user, val[key]
-
-
-# ── leaderboard-specific helpers ───────────────────────────
 def week_meta(now: datetime) -> tuple[str, str]:
-    monday = now - timedelta(days=now.weekday())
+    """Return ('WEEK 30', 'Jul 28 – Aug 3') for the given Dhaka date."""
+    monday = now - timedelta(days=now.weekday())            # Monday of this week
     sunday = monday + timedelta(days=6)
-    return f"WEEK {now.isocalendar().week}", f"{monday:%b %d} – {sunday:%b %d}"
-
+    week_no = now.isocalendar().week
+    range_txt = f"{monday:%b %d} – {sunday:%b %d}"
+    return f"WEEK {week_no}", range_txt
 
 def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
-    wins   = sum(1 for p in picks if p["result"] == "win")
+    """Return '3-2'  and  '🔥3W' / '❌2L' / '✔️1W' / '—' """
+    wins  = sum(1 for p in picks if p["result"] == "win")
     losses = sum(1 for p in picks if p["result"] == "loss")
-
+    # streak (latest picks first)
     streak = 0
-    last   = None
+    last_type = None
     for p in sorted(picks, key=lambda x: x["date"], reverse=True):
         if p["result"] not in ("win", "loss"):
             break
-        if last is None:
-            last, streak = p["result"], 1
-        elif p["result"] == last:
+        if last_type is None:
+            last_type = p["result"]
+            streak = 1
+        elif p["result"] == last_type:
             streak += 1
         else:
             break
-
     if streak == 0:
         streak_txt = "—"
     else:
-        icon = "🔥" if last == "win" and streak > 1 else "✔️" if last == "win" else "❌"
-        streak_txt = f"{icon}{streak}{'W' if last == 'win' else 'L'}"
-
+        icon = "🔥" if last_type == "win" and streak > 1 else "✔️" if last_type == "win" else "❌"
+        streak_txt = f"{icon}{streak}{'W' if last_type=='win' else 'L'}"
     return f"{wins}-{losses}", streak_txt
 
 
-def updated_stamp() -> str:
-    return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
+# ──────────────────────────────────────────────────────────────────────
 
 
-# ─────────── admin guard decorator ───────────
+# ───────────── admin guard ─────────────
 def admin_required(handler):
     @wraps(handler)
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *a, **kw):
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         if update.effective_user.id not in ADMIN_IDS:
             await update.message.reply_text(
                 "🚫 *Sorry, this bot can only be used by @asifalex.*",
-                parse_mode=ParseMode.MARKDOWN,
+                parse_mode=ParseMode.MARKDOWN
             )
             return
-        return await handler(update, context, *a, **kw)
+        return await handler(update, context, *args, **kwargs)
     return wrapper
 
 
-# ─────────── public commands ───────────
+# ───────────── /start ─────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🎉 *Welcome to the Betting Tracker Bot!*\n"
         "Created with ❤️ by @asifalex\n\n"
         "Type /commands to see everything I can do.",
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=ParseMode.MARKDOWN
     )
 
-
+# ───────────── /commands ─────────────
 async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "📋 *Command list*\n"
-        "-  `/addpick <user> <odds> <stake>` – add a new pick\n"
-        "-  `/setresult <id> <win/loss>` – close a pick\n"
-        "-  `/pending` – show all open bets\n"
-        "-  `/stats all` – comprehensive stats\n"
-        "-  `/leaderboard [weekly|monthly|lifetime]` – rankings\n"
-        "-  `/summary` – quick group overview\n"
-        "-  `/resetdb` – wipe database (admin only)"
+        "• `/addpick <user> <odds> <stake>` – add a new pick\n"
+        "• `/setresult <id> <win/loss>` – close a pick\n"
+        "• `/pending` – show all open bets\n"
+        "• `/stats <all> (all data at once)` – performance stats\n"
+        "• `/leaderboard (daily|weekly|monthly)` – top bettors\n"
+        "• `/summary` – condensed group overview\n"
+        "• `/resetdb` – wipe database (admin only)"
     )
     await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
-# ─────────── protected commands ───────────
+
+# ───────────── protected commands ─────────────
 @admin_required
 async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -140,7 +140,7 @@ async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_pick(user.strip(), float(odds), float(stake))
         await update.message.reply_text(
             f"🎯 New pick saved!\n👤 *{user}* | Odds *{odds}* | 💵 *{stake}*",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.MARKDOWN
         )
     except Exception:
         await update.message.reply_text("⚠️ Usage: /addpick <user> <odds> <stake>")
@@ -165,198 +165,306 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @admin_required
 async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rows = [
-        f"🆔 *{d['short_id']}* | 👤 *{d['user']}* | Odds {d['odds']} | 💵 {d['stake']}"
-        for d in get_pending()
+        f"🆔 *{doc['short_id']}* | 👤 *{doc['user']}* | Odds {doc['odds']} | 💵 {doc['stake']}"
+        for doc in get_pending()
     ]
-    text = "⏳ *Pending Picks*\n" + ("\n".join(rows) if rows else "— none —")
-    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    txt = "⏳ *Pending Picks*\n" + ("\n".join(rows) if rows else "— none —")
+    await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN)
 
 
-# ─────────── /stats handler ───────────
 @admin_required
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        period = context.args[0].lower() if context.args else "all"
-        if period not in ("daily", "weekly", "monthly", "all"):
-            raise ValueError()
-            
-        period_label = {
-            "daily": "Today",
-            "weekly": "This Week",
-            "monthly": "This Month",
-            "all": "Lifetime"
-        }[period]
-        
-        # Get stats for all users
-        user_stats = {}
-        for user in get_all_users():
-            picks = list(get_picks_by_user(user, period if period != "all" else "lifetime"))
-            if picks:
-                user_stats[user] = calculate_stats(picks)
-                
-        if not user_stats:
-            await update.message.reply_text("📊 No stats available yet.")
-            return
-            
-        # Overall stats
-        all_picks = []
-        for picks in user_stats.values():
-            all_picks.extend(picks)
-        overall = calculate_stats(all_picks)
-        
-        # Find top performers
-        top_profit_user, top_profit = rank_users(user_stats, "profit")
-        top_roi_user, top_roi = rank_users(user_stats, "roi")
-        
-        # Format message
-        text = (
-            f"📊 *Stats for {period_label}*\n"
-            f"➤ *Overall*: {money(overall['profit'])} | {overall['count']} picks | 📈 {overall['roi']:+.1f}%\n\n"
-            f"🏆 *Top Performers*\n"
-            f"├─ Profit: 👤 {top_profit_user} - {money(top_profit)}\n"
-            f"└─ ROI:    👤 {top_roi_user} - {top_roi:+.1f}%\n\n"
-            f"{updated_stamp()}"
+    # … (unchanged code) …
+    # keep the body exactly as you have it
+    # -------------------------------------------------------------
+    if not context.args:
+        await update.message.reply_text(
+            " 📊 To get all your usage data at once, type: /stats all"
         )
-        
-        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-        
-    except Exception:
-        await update.message.reply_text("⚠️ Usage: /stats [daily|weekly|monthly|all]")
+        return
+    target = context.args[0].lower()
+    period = context.args[1].lower() if len(context.args) > 1 else None
+
+    def stats_for(user, p_key):
+        return calculate_stats(list(get_picks_by_user(user, p_key)))
+
+    if period in ("daily", "weekly", "monthly"):
+        if target == "all":
+            lines = [
+                f"👤 *{user}*\n{dash_line(period_key_to_label(period), stats_for(user, period))}"
+                for user in get_all_users()
+            ]
+            await update.message.reply_text(
+                "\n\n".join(lines) if lines else "📉 No finished picks yet.",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+        else:
+            st = stats_for(target, period)
+            await update.message.reply_text(
+                f"📊 Stats for *{target}* ({period_key_to_label(period)}):\n"
+                f"{dash_line(period_key_to_label(period), st)}",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+        return
+
+    keys = ("daily", "weekly", "monthly")
+    # ─────────── NEW ‘/stats all’ block ───────────
+    if target == "all":
+        # aggregate over *all* finished picks in the DB
+        total_profit = total_stake = wins = losses = 0
+        total_picks  = 0
+        user_sections = []
+
+        for user in get_all_users():
+            # lifetime numbers for this user
+            picks_life = list(get_picks_by_user(user, "lifetime"))
+            if not picks_life:
+                continue
+
+            stats_life = calculate_stats(picks_life)
+            profit_life = stats_life["profit"]
+            ev_life     = stats_life["roi"]
+
+            # daily / weekly / monthly
+            p_today   = calculate_stats(list(get_picks_by_user(user, "daily")))
+            p_week    = calculate_stats(list(get_picks_by_user(user, "weekly")))
+            p_month   = calculate_stats(list(get_picks_by_user(user, "monthly")))
+
+            # build the 4-row section for this user
+            section = [
+                f"**{user}** » {'📈' if profit_life>0 else '📉'} {money(profit_life)} (Lifetime)",
+                period_line("Today",  p_today["profit"],  p_today["count"],  p_today["roi"]),
+                period_line("Week",   p_week["profit"],   p_week["count"],   p_week["roi"]),
+                period_line("Month",  p_month["profit"],  p_month["count"],  p_month["roi"]),
+                f"└─ Lifetime: {money(profit_life)} | {stats_life['count']} pick{'s' if stats_life['count']!=1 else ''} | {ev_life:.2f} EV",
+                ""
+            ]
+            user_sections.append("\n".join(section))
+
+            # accumulate for group summary
+            total_profit += profit_life
+            total_stake  += sum(float(doc["stake"]) for doc in picks_life)
+            wins         += sum(1 for doc in picks_life if doc["result"]=="win")
+            losses       += sum(1 for doc in picks_life if doc["result"]=="loss")
+            total_picks  += len(picks_life)
+
+        win_rate = (wins / total_picks) * 100 if total_picks else 0
+        avg_roi  = (total_profit / total_stake) * 100 if total_stake else 0
+
+        msg = [
+            "🔋 *EV TRACKER - COMPREHENSIVE STATS*",
+            "/stats all",
+            "",
+            "*🏆 GROUP SUMMARY*",
+            f"✅ **Net Profit**: {money(total_profit)}",
+            f"📊 **Total Picks**: {total_picks}",
+            f"📈 **Win Rate**: {win_rate:.0f}% ({wins}W-{losses}L)",
+            f"🕰️ **Avg ROI**: {avg_roi:+.1f}%",
+            "",
+            "*🧾 INDIVIDUAL BREAKDOWN*",
+            "",
+            "\n".join(user_sections),
+            f"_Updated: {datetime.now(DHAKA):%Y-%m-%d %I:%M %p}_"
+        ]
+
+        await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+        return
 
 
-# ─────────── LEADERBOARD ───────────
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # period via command or button
-    if update.message:
-        period = context.args[0].lower() if context.args else "weekly"
-    else:
-        # Handle callback data
-        data = update.callback_query.data
-        period = data.replace("lb_", "")
-        if period == "week": period = "weekly"
-        if period == "month": period = "monthly"
-        if period == "life": period = "lifetime"
+    # period can come either from command args or from an inline button
+    period = (context.args[0].lower() if context.args else "weekly") \
+             if isinstance(update, Update) and update.message else context.data
 
     if period not in ("weekly", "monthly", "lifetime"):
         await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
         return
 
-    # header
+    # title / date range text
     now_local = datetime.now(DHAKA)
     if period == "weekly":
         wk, dr = week_meta(now_local)
-        title = f"📊 LEADERBOARD – {wk} ({dr})"
+        title = f"📊 LEADERBOARD - {wk} ({dr})"
     elif period == "monthly":
-        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+        title = f"📊 LEADERBOARD - {now_local:%B %Y}"
     else:
-        title = "📊 LEADERBOARD – LIFETIME"
+        title = "📊 LEADERBOARD - LIFETIME"
 
-    # per-user stats
+    # collect stats for every user
     rows = []
-    for u in get_all_users():
-        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+    for user in get_all_users():
+        picks = list(get_picks_by_user(user, period if period != "lifetime" else "lifetime"))
         if not picks:
             continue
-        st = calculate_stats(picks)
+        st      = calculate_stats(picks)
+        profit  = st["profit"]
+        roi     = st["roi"]
         wl, streak = wl_and_streak(picks)
-        rows.append(
-            dict(user=u, profit=st["profit"], roi=st["roi"],
-                 picks=st["count"], wl=wl, streak=streak)
-        )
+        rows.append({
+            "user":   user,
+            "profit": profit,
+            "roi":    roi,
+            "picks":  st["count"],
+            "wl":     wl,
+            "streak": streak,
+        })
+
+    # sort by P/L desc
     rows.sort(key=lambda x: x["profit"], reverse=True)
 
     if not rows:
         await update.message.reply_text("📉 No finished picks yet.")
         return
 
-    # table
+    # build the pretty table
     medals = ["🥇", "🥈", "🥉"]
-    body_lines = [
-        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
-        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
-        f"{r['wl']:<5} {r['streak']}"
-        for i, r in enumerate(rows)
-    ]
+    lines = []
+    for idx, r in enumerate(rows, start=1):
+        medal = medals[idx-1] if idx <= 3 else "  "  # thin spaces to align
+        lines.append(
+            f"{medal} {r['user']:<8} {money(r['profit']):>6}  "
+            f"{r['roi']:+6.1f}%  {r['picks']:^3}  {r['wl']:<4}  {r['streak']}"
+        )
 
-    # Compose the message
     txt = (
         f"{title}\n"
-        f"{updated_stamp()}\n"
-        "```text\n"
-        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
-        + "\n".join(body_lines) +
-        "\n```"
+        "Rank | Bettor | P/L ($) | ROI% | Picks | W-L | Streak\n"
+        + "\n".join(lines)
     )
 
-    # inline buttons
-    if period == "weekly":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📆 Monthly",  callback_data="lb_month"),
-                                    InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
-    elif period == "monthly":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",   callback_data="lb_week"),
-                                    InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
-    else:
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",   callback_data="lb_week"),
-                                    InlineKeyboardButton("📆 Monthly",  callback_data="lb_month")]])
+    # inline keyboard for quick switching
+    kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
+        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
+    ]]) if period == "weekly" else InlineKeyboardMarkup([[
+        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
+        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
+    ]]) if period == "monthly" else InlineKeyboardMarkup([[
+        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
+        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
+    ]])
 
-    # send or edit
+    # send or edit message depending on origin
     if update.message:
         await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
 
 
-# ─────────── Summary Command ───────────
-@admin_required
-async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    periods = ["daily", "weekly", "monthly"]
-    stats_list = []
-    
-    for period in periods:
-        picks = list(get_picks_by_user(None, period))
-        if picks:
-            stats_list.append(calculate_stats(picks))
-        else:
-            stats_list.append({"profit": 0.0, "count": 0, "roi": 0.0})
-    
-    text = (
-        "📊 *Group Summary*\n"
-        f"{dash_line('Today', stats_list[0])}\n"
-        f"{dash_line('This Week', stats_list[1])}\n"
-        f"{dash_line('This Month', stats_list[2])}\n\n"
-        f"{updated_stamp()}"
-    )
-    
-    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+# ---------- callback dispatcher ----------
+async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # map button → period and reuse the same code above
+    mapping = {"lb_week": "weekly", "lb_month": "monthly", "lb_life": "lifetime"}
+    period  = mapping.get(update.callback_query.data, "weekly")
+    # store in context so leaderboard() can see it
+    context.data = period
+    await leaderboard(update, context)
 
 
-# ─────────── Reset DB Handlers ───────────
+
+
 @admin_required
 async def resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("Yes, reset", callback_data="resetdb_confirm"),
-         InlineKeyboardButton("Cancel", callback_data="resetdb_cancel")]
-    ]
+    user_id = update.effective_user.id
+    if context.args and context.args[0].lower() == "yes":
+        reset_database()
+        await update.message.reply_text("🗑️ Database wiped clean.")
+        return
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("✅ Yes — wipe it", callback_data="resetdb_yes"),
+            InlineKeyboardButton("❌ No — keep data",  callback_data="resetdb_no"),
+        ]
+    ])
     await update.message.reply_text(
-        "⚠️ *Reset Database?* This will delete ALL data!",
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        "⚠️ *Danger!*  This will delete _every_ pick.\nAre you sure?",
+        reply_markup=keyboard,
         parse_mode=ParseMode.MARKDOWN
     )
 
 
 async def confirm_resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
+    query   = update.callback_query
+    user_id = query.from_user.id
     await query.answer()
-    
-    if query.data == "resetdb_confirm":
+    if user_id not in ADMIN_IDS:
+        await query.edit_message_text("🚫 No permission.")
+        return
+    if query.data == "resetdb_yes":
         reset_database()
-        await query.edit_message_text("✅ Database has been reset.")
+        await query.edit_message_text("🗑️ Database wiped clean.")
     else:
-        await query.edit_message_text("Reset cancelled.")
+        await query.edit_message_text("✅ Reset cancelled.")
 
+@admin_required
+async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Group-wide EV tracker summary."""
+    # gather lifetime stats for every user that has finished picks
+    users_stats = {}
+    total_profit = total_picks = wins = 0
+    total_stake  = 0.0
 
-# ─────────── bot init ───────────
+    for user in get_all_users():
+        picks = list(get_picks_by_user(user, "lifetime"))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+
+        # save for later ranking
+        users_stats[user] = {
+            "profit": st["profit"],
+            "ev":     st["ev"],
+        }
+
+        # group aggregates
+        total_profit += st["profit"]
+        total_picks  += st["count"]
+        wins         += round(st["hit_rate"] * st["count"] / 100)
+        total_stake  += sum(float(p["stake"]) for p in picks)
+
+    losses   = total_picks - wins
+    win_rate = (wins / total_picks) * 100 if total_picks else 0
+    avg_roi  = (total_profit / total_stake) * 100 if total_stake else 0
+    avg_ev   = (sum(u["ev"] for u in users_stats.values()) / len(users_stats)
+                if users_stats else 0)
+
+    # performance highlights
+    top_earner, top_profit     = rank_users(users_stats, "profit",  True)
+    worst_draw, worst_profit   = rank_users(users_stats, "profit",  False)
+    value_king, top_ev         = rank_users(users_stats, "ev",      True)
+
+    # build member list
+    member_lines = [
+        f"{u} » {'📈' if s['profit']>0 else '📉'} {money(s['profit'])} | ⚖️{s['ev']:.2f} EV"
+        for u, s in users_stats.items()
+    ]
+
+    msg = [
+        "🔋 *EV TRACKER - GROUP SUMMARY*",
+        "",
+        "*📊 CORE METRICS*",
+        f"✅ **Net Profit**: {money(total_profit)}",
+        f"📈 **Win Rate**: {win_rate:.0f}% ({wins}W-{losses}L)",
+        f"🧠 **Avg EV**: {avg_ev:.2f}",
+        f"💰 **Avg ROI**: {avg_roi:+.1f}%",
+        f"🎯 **Total Picks**: {total_picks}",
+        "",
+        "*🏅 PERFORMANCE HIGHLIGHTS*",
+        f"🥇 **Top Earner**: {top_earner} ({money(top_profit)})",
+        f"📉 **Biggest Drawdown**: {worst_draw} ({money(worst_profit)})",
+        f"⚡ **Value King**: {value_king} ({top_ev:.2f} EV)",
+        "",
+        "*👥 MEMBER PERFORMANCE (Lifetime)*",
+        *member_lines,
+        "",
+        f"_Updated: {datetime.now(DHAKA):%Y-%m-%d %I:%M %p} | /stats all for details_",
+    ]
+
+    await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+
+# ───────────── bot init ─────────────
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 app.add_handler(CommandHandler("start",       start))
@@ -366,10 +474,9 @@ app.add_handler(CommandHandler("setresult",   setresult))
 app.add_handler(CommandHandler("pending",     pending))
 app.add_handler(CommandHandler("stats",       stats))
 app.add_handler(CommandHandler("leaderboard", leaderboard))
-app.add_handler(CommandHandler("summary",     summary))
 app.add_handler(CommandHandler("resetdb",     resetdb))
-
+app.add_handler(CommandHandler("summary", summary))
 app.add_handler(CallbackQueryHandler(confirm_resetdb, pattern="^resetdb_"))
-app.add_handler(CallbackQueryHandler(leaderboard, pattern="^lb_"))
+app.add_handler(CallbackQueryHandler(leaderboard_cb, pattern="^lb_"))
 
 app.run_polling()
