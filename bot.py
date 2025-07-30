@@ -184,7 +184,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         period = context.args[0].lower() if context.args else "weekly"
     else:
-        period = getattr(context, "data", "weekly")
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
 
     if period not in ("weekly", "monthly", "lifetime"):
         await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
@@ -227,15 +227,3437 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for i, r in enumerate(rows)
     ]
 
-    # compose the message
+    # Fixed string concatenation
     txt = (
         f"{title}\n"
         f"{updated_stamp()}\n"
-        "```
-        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n" +
-        "\n".join(body_lines) +
-        "\n```"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
     )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...)
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
+@admin_required
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # period via command or button
+    if update.message:
+        period = context.args[0].lower() if context.args else "weekly"
+    else:
+        period = getattr(update.callback_query, "data", "weekly").replace("lb_", "")
+
+    if period not in ("weekly", "monthly", "lifetime"):
+        await update.message.reply_text("⚠️ Usage: /leaderboard [weekly|monthly|lifetime]")
+        return
+
+    # header
+    now_local = datetime.now(DHAKA)
+    if period == "weekly":
+        wk, dr = week_meta(now_local)
+        title = f"📊 LEADERBOARD – {wk} ({dr})"
+    elif period == "monthly":
+        title = f"📊 LEADERBOARD – {now_local:%B %Y}"
+    else:
+        title = "📊 LEADERBOARD – LIFETIME"
+
+    # per-user stats
+    rows = []
+    for u in get_all_users():
+        picks = list(get_picks_by_user(u, "lifetime" if period == "lifetime" else period))
+        if not picks:
+            continue
+        st = calculate_stats(picks)
+        wl, streak = wl_and_streak(picks)
+        rows.append(
+            dict(user=u, profit=st["profit"], roi=st["roi"],
+                 picks=st["count"], wl=wl, streak=streak)
+        )
+    rows.sort(key=lambda x: x["profit"], reverse=True)
+
+    if not rows:
+        await update.message.reply_text("📉 No finished picks yet.")
+        return
+
+    # table
+    medals = ["🥇", "🥈", "🥉"]
+    body_lines = [
+        f"{(medals[i] if i < 3 else '  '):<2} {r['user']:<10}"
+        f"{money(r['profit']):>8} {r['roi']:+7.1f}%  {r['picks']:^3} "
+        f"{r['wl']:<5} {r['streak']}"
+        for i, r in enumerate(rows)
+    ]
+
+    # Fixed string concatenation
+    txt = (
+        f"{title}\n"
+        f"{updated_stamp()}\n"
+        "```text\n"
+        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+        + "\n".join(body_lines) +
+        "\n```"  # Fixed missing quote
+    )
+
+    # ... rest of the function remains unchanged ...
 
     # inline buttons
     if period == "weekly":
