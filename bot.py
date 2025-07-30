@@ -321,46 +321,44 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not rows:
         await update.message.reply_text("📉 No finished picks yet.")
         return
-
-    # ---------- pretty table (monospace) ----------
-    medals = ["🥇", "🥈", "🥉"]
-    body_lines = []
-    for idx, r in enumerate(rows, start=1):
-        medal = medals[idx-1] if idx <= 3 else "  "
-        body_lines.append(
-            f"{medal:<2} {r['user']:<10} {money(r['profit']):>8} "
-            f"{r['roi']:+7.1f}%  {r['picks']:^3}  {r['wl']:<5} {r['streak']}"
-        )
-
-    def stamp() -> str:
-        return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
-
-    message = (
-        f"{title}\n"
-        f"{stamp()}\n"
-        "```text\n"
-        "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
-        + "\n".join(body_lines) +
-        "\n```
+    
+    # ───────── build the pretty table ─────────
+medals = ["🥇", "🥈", "🥉"]
+body_lines = []
+for idx, r in enumerate(rows, start=1):
+    medal = medals[idx-1] if idx <= 3 else "  "
+    body_lines.append(
+        f"{medal:<2} {r['user']:<10} {money(r['profit']):>8} "
+        f"{r['roi']:+7.1f}%  {r['picks']:^3}  {r['wl']:<5} {r['streak']}"
     )
 
-    # ---------- inline keyboard ----------
-    if period == "weekly":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📆 Monthly", callback_data="lb_month"),
-                                    InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
-    elif period == "monthly":
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",  callback_data="lb_week"),
-                                    InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
-    else:  # lifetime
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",  callback_data="lb_week"),
-                                    InlineKeyboardButton("📆 Monthly", callback_data="lb_month")]])
+# ───────── compose the message safely ─────────
+def updated_stamp() -> str:
+    return f"⌚ Updated: {datetime.now(DHAKA):%Y-%m-%d – %I:%M %p}"
 
-    # send or edit
-    if update.message:
-        await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-    else:
-        await update.callback_query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+header      = f"{title}\n{updated_stamp()}\n```
+table_head  = "Rank Bettor        P/L     ROI%  Pk  W-L  Streak\n"
+table_body  = "\n".join(body_lines)
+footer      = "\n```"          # note the leading \n *and* closing quote
 
+txt = header + table_head + table_body + footer
+
+# ───────── inline keyboard (unchanged) ─────────
+if period == "weekly":
+    kb = InlineKeyboardMarkup([[InlineKeyboardButton("📆 Monthly",  callback_data="lb_month"),
+                                InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
+elif period == "monthly":
+    kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",   callback_data="lb_week"),
+                                InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life")]])
+else:  # lifetime
+    kb = InlineKeyboardMarkup([[InlineKeyboardButton("📅 Weekly",   callback_data="lb_week"),
+                                InlineKeyboardButton("📆 Monthly",  callback_data="lb_month")]])
+
+# ───────── send or edit message ─────────
+if update.message:
+    await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+else:
+    await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
 
 # -------------------------------------------------
 # CALLBACK HANDLER (add / keep)
