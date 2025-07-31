@@ -106,7 +106,7 @@ def admin_required(handler):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         if update.effective_user.id not in ADMIN_IDS:
             await update.message.reply_text(
-                "🚫 *Sorry, this bot can only be used by @asifalex.*",
+                "🚫 *Sorry, this Command can only be used by @asifalex.*",
                 parse_mode=ParseMode.MARKDOWN
             )
             return
