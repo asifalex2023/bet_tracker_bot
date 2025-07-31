@@ -196,14 +196,28 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Usage: /setresult <id> <win/loss>")
 
 
-@admin_required
+
+
 async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rows = [
         f"🆔 *{doc['short_id']}* | 👤 *{doc['user']}* | Odds {doc['odds']} | 💵 {doc['stake']}"
         for doc in get_pending()
     ]
     txt = "⏳ *Pending Picks*\n" + ("\n".join(rows) if rows else "— none —")
-    await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN)
+    
+    bot_message = await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN)
+    
+    # Schedule deletion after 30 minutes (1800 seconds)
+    context.job_queue.run_once(
+        delete_messages,
+        1800,  # 30 minutes
+        data={
+            'chat_id': update.effective_chat.id,
+            'user_message_id': update.message.message_id,
+            'bot_message_id': bot_message.message_id
+        }
+    )
+
 
 
 @admin_required
@@ -299,10 +313,19 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+
+                # Schedule deletion after 30 minutes for /stats all
+        context.job_queue.run_once(
+            delete_messages,
+            1800,  # 30 minutes
+            data={
+                'chat_id': update.effective_chat.id,
+                'user_message_id': update.message.message_id,
+                'bot_message_id': bot_message.message_id
+            }
+        )
         return
     
-
-@admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period can come either from command args or from an inline button
     period = (context.args[0].lower() if context.args else "weekly") \
@@ -381,10 +404,20 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # send or edit message depending on origin
     if update.message:
-        await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+        bot_message = await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+        
+        # Schedule deletion after 30 minutes (1800 seconds)
+        context.job_queue.run_once(
+            delete_messages,
+            1800,  # 30 minutes
+            data={
+                'chat_id': update.effective_chat.id,
+                'user_message_id': update.message.message_id,
+                'bot_message_id': bot_message.message_id
+            }
+        )
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
-
 
 
 
@@ -453,8 +486,6 @@ async def confirm_resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("✅ Reset cancelled.")
 
-
-@admin_required
 async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Group-wide EV tracker summary."""
     # gather lifetime stats for every user that has finished picks
@@ -518,7 +549,19 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"_Updated: {datetime.now(DHAKA):%Y-%m-%d %I:%M %p} | /stats all for details_",
     ]
 
-    await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+    bot_message = await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+    
+    # Schedule deletion after 30 minutes (1800 seconds)
+    context.job_queue.run_once(
+        delete_messages,
+        1800,  # 30 minutes
+        data={
+            'chat_id': update.effective_chat.id,
+            'user_message_id': update.message.message_id,
+            'bot_message_id': bot_message.message_id
+        }
+    )
+
 
 
 # ───────────── bot init ─────────────
@@ -528,12 +571,13 @@ app.add_handler(CommandHandler("start",       start))
 app.add_handler(CommandHandler("commands",    commands))
 app.add_handler(CommandHandler("addpick",     addpick))
 app.add_handler(CommandHandler("setresult",   setresult))
-app.add_handler(CommandHandler("pending",     pending))
+app.add_handler(CommandHandler("pending",     pending))        # Now available to all
 app.add_handler(CommandHandler("stats",       stats))
-app.add_handler(CommandHandler("leaderboard", leaderboard))
+app.add_handler(CommandHandler("leaderboard", leaderboard))    # Now available to all
 app.add_handler(CommandHandler("resetdb",     resetdb))
-app.add_handler(CommandHandler("summary", summary))
+app.add_handler(CommandHandler("summary",     summary))        # Now available to all
 app.add_handler(CallbackQueryHandler(confirm_resetdb, pattern="^resetdb_"))
 app.add_handler(CallbackQueryHandler(leaderboard_cb, pattern="^lb_"))
 
 app.run_polling()
+
