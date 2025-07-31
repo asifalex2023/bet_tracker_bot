@@ -6,12 +6,9 @@ from zoneinfo              import ZoneInfo
 from telegram              import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants    import ParseMode
 from telegram.ext          import (
-<<<<<<< HEAD
-    ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, JobQueue
-=======
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
->>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
 )
+
 
 from config   import BOT_TOKEN, ADMIN_IDS
 from database import (
@@ -23,19 +20,22 @@ from datetime import datetime
 from zoneinfo import ZoneInfo                # add alongside other imports
 DHAKA = ZoneInfo("Asia/Dhaka")
 
+
 # ────────── helpers ──────────
 def money(val: float) -> str:
     """+123 → $+123, –45.5 → $-45.5 (no decimals if .0)."""
     whole = int(val)
     return f"${whole:+}" if val.is_integer() else f"${val:+.1f}"
 
+
 def period_line(label: str, profit: float, picks: int, roi: float) -> str:
-    """Return the ‘├─ Week: …’ style row used in the /stats all layout."""
+    """Return the '├─ Week: …' style row used in the /stats all layout."""
     icon = "✅" if profit > 0 else "❌" if profit < 0 else "➖"
     return (
         f"├─ {label}: {money(profit)} | {picks} pick{'s' if picks != 1 else ''} | "
         f"{icon} {roi:+.1f}%"
     )
+
 
 # NEW ↓↓↓ ──────────────────────────────────────────────────────────────
 def dash_line(label: str, stats: dict) -> str:
@@ -50,16 +50,21 @@ def dash_line(label: str, stats: dict) -> str:
         f"{'s' if stats['count'] != 1 else ''} | 📈 {stats['roi']:+.1f}%"
     )
 
+
 def period_key_to_label(key: str) -> str:
     """Convert an internal period key to a human label."""
     return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
+
+
 def rank_users(users_stats, key, reverse=True):
-    """Return user name and the chosen metric’s value."""
+    """Return user name and the chosen metric's value."""
     user, value = max(users_stats.items(), key=lambda x: x[1][key]) if reverse \
                   else min(users_stats.items(), key=lambda x: x[1][key])
     return user, value[key]
 
+
 # ────────── leaderboard helpers ──────────
+
 
 def week_meta(now: datetime) -> tuple[str, str]:
     """Return ('WEEK 30', 'Jul 28 – Aug 3') for the given Dhaka date."""
@@ -68,6 +73,7 @@ def week_meta(now: datetime) -> tuple[str, str]:
     week_no = now.isocalendar().week
     range_txt = f"{monday:%b %d} – {sunday:%b %d}"
     return f"WEEK {week_no}", range_txt
+
 
 def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
     """Return '3-2'  and  '🔥3W' / '❌2L' / '✔️1W' / '—' """
@@ -94,9 +100,6 @@ def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
     return f"{wins}-{losses}", streak_txt
 
 
-# ──────────────────────────────────────────────────────────────────────
-
-
 # ───────────── admin guard ─────────────
 def admin_required(handler):
     @wraps(handler)
@@ -120,6 +123,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN
     )
 
+
 # ───────────── /commands ─────────────
 async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
@@ -135,12 +139,7 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
-
 # ───────────── protected commands ─────────────
-<<<<<<< HEAD
-
-=======
->>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
 @admin_required
 async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -209,15 +208,6 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @admin_required
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-<<<<<<< HEAD
-
-
-
-=======
-    # … (unchanged code) …
-    # keep the body exactly as you have it
-    # -------------------------------------------------------------
->>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
     if not context.args:
         await update.message.reply_text(
             " 📊 To get all your usage data at once, type: /stats all"
@@ -249,11 +239,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keys = ("daily", "weekly", "monthly")
-<<<<<<< HEAD
     
-=======
-    # ─────────── NEW ‘/stats all’ block ───────────
->>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
     if target == "all":
         # aggregate over *all* finished picks in the DB
         total_profit = total_stake = wins = losses = 0
@@ -366,7 +352,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
     for idx, r in enumerate(rows, start=1):
-        medal = medals[idx-1] if idx <= 3 else "  "  # thin spaces to align
+        medal = medals[idx-1] if idx <= 3 else "  "  # thin spaces to align
         lines.append(
             f"{medal} {r['user']:<8} {money(r['profit']):>6}  "
             f"{r['roi']:+6.1f}%  {r['picks']:^3}  {r['wl']:<4}  {r['streak']}"
@@ -406,7 +392,7 @@ async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.data = period
     await leaderboard(update, context)
 
-<<<<<<< HEAD
+
 async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
     """Delete both user command and bot response messages"""
     job_data = context.job.data
@@ -425,10 +411,6 @@ async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.delete_message(chat_id, bot_message_id)
     except Exception:
         pass  # Message might already be deleted
-
-=======
->>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
-
 
 
 @admin_required
@@ -464,6 +446,7 @@ async def confirm_resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🗑️ Database wiped clean.")
     else:
         await query.edit_message_text("✅ Reset cancelled.")
+
 
 @admin_required
 async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -530,6 +513,7 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+
 
 # ───────────── bot init ─────────────
 app = ApplicationBuilder().token(BOT_TOKEN).build()
