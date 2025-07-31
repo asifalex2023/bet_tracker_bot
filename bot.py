@@ -300,6 +300,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
         return
+    
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period can come either from command args or from an inline button
@@ -314,11 +315,11 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now_local = datetime.now(DHAKA)
     if period == "weekly":
         wk, dr = week_meta(now_local)
-        title = f"📊 **PROFIT LEADERBOARD - {wk}** ({dr})"
+        title = f"📊 **PROFIT LEADERBOARD - {wk}**\n**({dr})**"
     elif period == "monthly":
-        title = f"📊 **PROFIT LEADERBOARD - {now_local:%B %Y}**"
+        title = f"📊 **PROFIT LEADERBOARD**\n**{now_local:%B %Y}**"
     else:
-        title = "📊 **PROFIT LEADERBOARD - LIFETIME**"
+        title = "📊 **PROFIT LEADERBOARD**\n**LIFETIME**"
 
     # collect stats for every user
     rows = []
@@ -329,7 +330,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             continue
         st = calculate_stats(picks)
         profit = st["profit"]
-        wl, _ = wl_and_streak(picks)  # we don't need streak anymore
+        wl, _ = wl_and_streak(picks)
         rows.append({
             "user": user,
             "profit": profit,
@@ -345,23 +346,23 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📉 No finished picks yet.")
         return
 
-    # build the refined table with medals for top 3
+    # build mobile-friendly rows
     medals = ["🥇", "🥈", "🥉"]
     lines = []
     for idx, r in enumerate(rows, start=1):
-        rank_display = medals[idx-1] if idx <= 3 else f"{idx} "
+        rank_display = medals[idx-1] if idx <= 3 else f"{idx}️⃣"
         profit_emoji = "📈" if r['profit'] > 0 else "📉" if r['profit'] < 0 else "➖"
         
+        # Mobile-friendly single line format
         lines.append(
-            f"{rank_display} **{r['user']:<8}** {money(r['profit']):>8} {profit_emoji} | "
-            f"{r['picks']:>2} picks | {r['wl']}"
+            f"{rank_display} **{r['user']}** {money(r['profit'])} {profit_emoji} | {r['picks']} picks | {r['wl']}"
         )
 
-    # create the message with refined formatting
+    # create mobile-optimized message
     txt = (
         f"{title}\n\n"
-        f"**RANK | TRADER     | P/L ($) | PICKS | W-L**\n"
-        f"{'─' * 45}\n"
+        f"**RANK | TRADER | P/L ($) | PICKS | W-L**\n"
+        f"────────────────────────────\n"
         + "\n".join(lines) + "\n\n"
         f"💰 **TOTAL NET PROFIT: {money(total_net_profit)}** 📊\n\n"
         f"_Updated: {now_local.strftime('%Y-%m-%d %I:%M %p')}_"
@@ -384,6 +385,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
 
 
 
