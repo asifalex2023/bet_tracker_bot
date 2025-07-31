@@ -6,7 +6,7 @@ from zoneinfo              import ZoneInfo
 from telegram              import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants    import ParseMode
 from telegram.ext          import (
-    ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+    ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, JobQueue
 )
 
 from config   import BOT_TOKEN, ADMIN_IDS
@@ -133,15 +133,30 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ───────────── protected commands ─────────────
+
 @admin_required
 async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user, odds, stake = context.args
         add_pick(user.strip(), float(odds), float(stake))
-        await update.message.reply_text(
+        
+        # Send the response message
+        bot_message = await update.message.reply_text(
             f"🎯 New pick saved!\n👤 *{user}* | Odds *{odds}* | 💵 *{stake}*",
             parse_mode=ParseMode.MARKDOWN
         )
+        
+        # Schedule deletion of both messages after 2 minutes (120 seconds)
+        context.job_queue.run_once(
+            delete_messages,
+            120,  # 2 minutes
+            data={
+                'chat_id': update.effective_chat.id,
+                'user_message_id': update.message.message_id,
+                'bot_message_id': bot_message.message_id
+            }
+        )
+        
     except Exception:
         await update.message.reply_text("⚠️ Usage: /addpick <user> <odds> <stake>")
 
@@ -152,12 +167,25 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pick_id, result = context.args
         if result.lower() not in ("win", "loss"):
             raise ValueError()
+        
         if set_result(pick_id, result.lower()):
-            await update.message.reply_text(
-                "✅ Result stored." if result.lower() == "win" else "❌ Result stored."
+            # Send the response message
+            response_text = "✅ Result stored." if result.lower() == "win" else "❌ Result stored."
+            bot_message = await update.message.reply_text(response_text)
+            
+            # Schedule deletion of both messages after 2 minutes (120 seconds)
+            context.job_queue.run_once(
+                delete_messages,
+                120,  # 2 minutes
+                data={
+                    'chat_id': update.effective_chat.id,
+                    'user_message_id': update.message.message_id,
+                    'bot_message_id': bot_message.message_id
+                }
             )
         else:
             await update.message.reply_text("🔎 Pick not found.")
+            
     except Exception:
         await update.message.reply_text("⚠️ Usage: /setresult <id> <win/loss>")
 
@@ -174,9 +202,9 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @admin_required
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # … (unchanged code) …
-    # keep the body exactly as you have it
-    # -------------------------------------------------------------
+
+
+
     if not context.args:
         await update.message.reply_text(
             " 📊 To get all your usage data at once, type: /stats all"
@@ -208,7 +236,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keys = ("daily", "weekly", "monthly")
-    # ─────────── NEW ‘/stats all’ block ───────────
+    
     if target == "all":
         # aggregate over *all* finished picks in the DB
         total_profit = total_stake = wins = losses = 0
@@ -360,6 +388,25 @@ async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # store in context so leaderboard() can see it
     context.data = period
     await leaderboard(update, context)
+
+async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
+    """Delete both user command and bot response messages"""
+    job_data = context.job.data
+    chat_id = job_data['chat_id']
+    user_message_id = job_data['user_message_id']
+    bot_message_id = job_data['bot_message_id']
+    
+    try:
+        # Delete user's command message
+        await context.bot.delete_message(chat_id, user_message_id)
+    except Exception:
+        pass  # Message might already be deleted or bot lacks permission
+    
+    try:
+        # Delete bot's response message
+        await context.bot.delete_message(chat_id, bot_message_id)
+    except Exception:
+        pass  # Message might already be deleted
 
 
 
