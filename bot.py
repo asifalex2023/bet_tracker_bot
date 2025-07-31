@@ -6,7 +6,11 @@ from zoneinfo              import ZoneInfo
 from telegram              import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants    import ParseMode
 from telegram.ext          import (
+<<<<<<< HEAD
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, JobQueue
+=======
+    ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+>>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
 )
 
 from config   import BOT_TOKEN, ADMIN_IDS
@@ -133,7 +137,10 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ───────────── protected commands ─────────────
+<<<<<<< HEAD
 
+=======
+>>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
 @admin_required
 async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -202,9 +209,15 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @admin_required
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+<<<<<<< HEAD
 
 
 
+=======
+    # … (unchanged code) …
+    # keep the body exactly as you have it
+    # -------------------------------------------------------------
+>>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
     if not context.args:
         await update.message.reply_text(
             " 📊 To get all your usage data at once, type: /stats all"
@@ -236,7 +249,11 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keys = ("daily", "weekly", "monthly")
+<<<<<<< HEAD
     
+=======
+    # ─────────── NEW ‘/stats all’ block ───────────
+>>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
     if target == "all":
         # aggregate over *all* finished picks in the DB
         total_profit = total_stake = wins = losses = 0
@@ -389,6 +406,7 @@ async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.data = period
     await leaderboard(update, context)
 
+<<<<<<< HEAD
 async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
     """Delete both user command and bot response messages"""
     job_data = context.job.data
@@ -408,6 +426,8 @@ async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         pass  # Message might already be deleted
 
+=======
+>>>>>>> c42c81a56ae7e9a890d5f205aaf9720f836fbe18
 
 
 
