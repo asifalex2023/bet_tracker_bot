@@ -301,6 +301,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
         return
     
+
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period can come either from command args or from an inline button
@@ -315,11 +316,11 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now_local = datetime.now(DHAKA)
     if period == "weekly":
         wk, dr = week_meta(now_local)
-        title = f"📊 **PROFIT LEADERBOARD - {wk}**\n**({dr})**"
+        title = f"📊 **LEADERBOARD - {wk}**\n**({dr})**"
     elif period == "monthly":
-        title = f"📊 **PROFIT LEADERBOARD**\n**{now_local:%B %Y}**"
+        title = f"📊 **LEADERBOARD**\n**{now_local:%B %Y}**"
     else:
-        title = "📊 **PROFIT LEADERBOARD**\n**LIFETIME**"
+        title = "📊 **LEADERBOARD - LIFETIME**"
 
     # collect stats for every user
     rows = []
@@ -350,19 +351,17 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     medals = ["🥇", "🥈", "🥉"]
     lines = []
     for idx, r in enumerate(rows, start=1):
-        rank_display = medals[idx-1] if idx <= 3 else f"{idx}️⃣"
+        rank_display = medals[idx-1] if idx <= 3 else f"{idx}"
         profit_emoji = "📈" if r['profit'] > 0 else "📉" if r['profit'] < 0 else "➖"
         
-        # Mobile-friendly single line format
         lines.append(
             f"{rank_display} **{r['user']}** {money(r['profit'])} {profit_emoji} | {r['picks']} picks | {r['wl']}"
         )
 
-    # create mobile-optimized message
+    # create mobile-optimized message with proper formatting
     txt = (
         f"{title}\n\n"
         f"**RANK | TRADER | P/L ($) | PICKS | W-L**\n"
-        f"────────────────────────────\n"
         + "\n".join(lines) + "\n\n"
         f"💰 **TOTAL NET PROFIT: {money(total_net_profit)}** 📊\n\n"
         f"_Updated: {now_local.strftime('%Y-%m-%d %I:%M %p')}_"
@@ -385,6 +384,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
 
 
 
