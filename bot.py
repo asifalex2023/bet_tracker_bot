@@ -300,7 +300,6 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
         return
-
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period can come either from command args or from an inline button
@@ -315,11 +314,11 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now_local = datetime.now(DHAKA)
     if period == "weekly":
         wk, dr = week_meta(now_local)
-        title = f"📊 LEADERBOARD - {wk} ({dr})"
+        title = f"📊 **PROFIT LEADERBOARD - {wk}** ({dr})"
     elif period == "monthly":
-        title = f"📊 LEADERBOARD - {now_local:%B %Y}"
+        title = f"📊 **PROFIT LEADERBOARD - {now_local:%B %Y}**"
     else:
-        title = "📊 LEADERBOARD - LIFETIME"
+        title = "📊 **PROFIT LEADERBOARD - LIFETIME**"
 
     # collect stats for every user
     rows = []
@@ -346,20 +345,25 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📉 No finished picks yet.")
         return
 
-    # build the refined table (removed ROI and Streak columns)
+    # build the refined table with medals for top 3
+    medals = ["🥇", "🥈", "🥉"]
     lines = []
     for idx, r in enumerate(rows, start=1):
+        rank_display = medals[idx-1] if idx <= 3 else f"{idx} "
+        profit_emoji = "📈" if r['profit'] > 0 else "📉" if r['profit'] < 0 else "➖"
+        
         lines.append(
-            f"{idx}    {r['user']:<10} {money(r['profit']):>8}    {r['picks']:>2}    {r['wl']:<5}"
+            f"{rank_display} **{r['user']:<8}** {money(r['profit']):>8} {profit_emoji} | "
+            f"{r['picks']:>2} picks | {r['wl']}"
         )
 
-    # create the message with total net profit and timestamp
+    # create the message with refined formatting
     txt = (
-        f"💰 **PROFIT LEADERBOARD - {wk if period == 'weekly' else now_local.strftime('%B %Y') if period == 'monthly' else 'LIFETIME'}** "
-        f"**({dr if period == 'weekly' else ''})**\n\n"
-        f"**TOTAL NET PROFIT:   {money(total_net_profit)}** 📊\n\n"
-        f"**RANK  TRADER        P/L ($)   PICKS  W/L**\n\n"
+        f"{title}\n\n"
+        f"**RANK | TRADER     | P/L ($) | PICKS | W-L**\n"
+        f"{'─' * 45}\n"
         + "\n".join(lines) + "\n\n"
+        f"💰 **TOTAL NET PROFIT: {money(total_net_profit)}** 📊\n\n"
         f"_Updated: {now_local.strftime('%Y-%m-%d %I:%M %p')}_"
     )
 
