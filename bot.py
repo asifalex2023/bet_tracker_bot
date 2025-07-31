@@ -301,7 +301,6 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
         return
 
-
 @admin_required
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # period can come either from command args or from an inline button
@@ -324,22 +323,21 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # collect stats for every user
     rows = []
+    total_net_profit = 0
     for user in get_all_users():
         picks = list(get_picks_by_user(user, period if period != "lifetime" else "lifetime"))
         if not picks:
             continue
-        st      = calculate_stats(picks)
-        profit  = st["profit"]
-        roi     = st["roi"]
-        wl, streak = wl_and_streak(picks)
+        st = calculate_stats(picks)
+        profit = st["profit"]
+        wl, _ = wl_and_streak(picks)  # we don't need streak anymore
         rows.append({
-            "user":   user,
+            "user": user,
             "profit": profit,
-            "roi":    roi,
-            "picks":  st["count"],
-            "wl":     wl,
-            "streak": streak,
+            "picks": st["count"],
+            "wl": wl,
         })
+        total_net_profit += profit
 
     # sort by P/L desc
     rows.sort(key=lambda x: x["profit"], reverse=True)
@@ -348,32 +346,33 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📉 No finished picks yet.")
         return
 
-    # build the pretty table
-    medals = ["🥇", "🥈", "🥉"]
+    # build the refined table (removed ROI and Streak columns)
     lines = []
     for idx, r in enumerate(rows, start=1):
-        medal = medals[idx-1] if idx <= 3 else "  "  # thin spaces to align
         lines.append(
-            f"{medal} {r['user']:<8} {money(r['profit']):>6}  "
-            f"{r['roi']:+6.1f}%  {r['picks']:^3}  {r['wl']:<4}  {r['streak']}"
+            f"{idx}    {r['user']:<10} {money(r['profit']):>8}    {r['picks']:>2}    {r['wl']:<5}"
         )
 
+    # create the message with total net profit and timestamp
     txt = (
-        f"{title}\n"
-        "Rank | Bettor | P/L ($) | ROI% | Picks | W-L | Streak\n"
-        + "\n".join(lines)
+        f"💰 **PROFIT LEADERBOARD - {wk if period == 'weekly' else now_local.strftime('%B %Y') if period == 'monthly' else 'LIFETIME'}** "
+        f"**({dr if period == 'weekly' else ''})**\n\n"
+        f"**TOTAL NET PROFIT:   {money(total_net_profit)}** 📊\n\n"
+        f"**RANK  TRADER        P/L ($)   PICKS  W/L**\n\n"
+        + "\n".join(lines) + "\n\n"
+        f"_Updated: {now_local.strftime('%Y-%m-%d %I:%M %p')}_"
     )
 
     # inline keyboard for quick switching
     kb = InlineKeyboardMarkup([[
-        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
-        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
+        InlineKeyboardButton("📆 Monthly", callback_data="lb_month"),
+        InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life"),
     ]]) if period == "weekly" else InlineKeyboardMarkup([[
-        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
-        InlineKeyboardButton("🏅 Lifetime",  callback_data="lb_life"),
+        InlineKeyboardButton("📅 Weekly", callback_data="lb_week"),
+        InlineKeyboardButton("🏅 Lifetime", callback_data="lb_life"),
     ]]) if period == "monthly" else InlineKeyboardMarkup([[
-        InlineKeyboardButton("📅 Weekly",    callback_data="lb_week"),
-        InlineKeyboardButton("📆 Monthly",   callback_data="lb_month"),
+        InlineKeyboardButton("📅 Weekly", callback_data="lb_week"),
+        InlineKeyboardButton("📆 Monthly", callback_data="lb_month"),
     ]])
 
     # send or edit message depending on origin
@@ -381,6 +380,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
 
 
 # ---------- callback dispatcher ----------
