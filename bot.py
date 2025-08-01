@@ -9,7 +9,6 @@ from telegram.ext          import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 )
 
-
 from config   import BOT_TOKEN, ADMIN_IDS
 from database import (
     add_pick, set_result, get_pending,
@@ -20,13 +19,11 @@ from datetime import datetime
 from zoneinfo import ZoneInfo                # add alongside other imports
 DHAKA = ZoneInfo("Asia/Dhaka")
 
-
 # ────────── helpers ──────────
 def money(val: float) -> str:
     """+123 → $+123, –45.5 → $-45.5 (no decimals if .0)."""
     whole = int(val)
     return f"${whole:+}" if val.is_integer() else f"${val:+.1f}"
-
 
 def period_line(label: str, profit: float, picks: int, roi: float) -> str:
     """Return the '├─ Week: …' style row used in the /stats all layout."""
@@ -35,7 +32,6 @@ def period_line(label: str, profit: float, picks: int, roi: float) -> str:
         f"├─ {label}: {money(profit)} | {picks} pick{'s' if picks != 1 else ''} | "
         f"{icon} {roi:+.1f}%"
     )
-
 
 # NEW ↓↓↓ ──────────────────────────────────────────────────────────────
 def dash_line(label: str, stats: dict) -> str:
@@ -50,11 +46,9 @@ def dash_line(label: str, stats: dict) -> str:
         f"{'s' if stats['count'] != 1 else ''} | 📈 {stats['roi']:+.1f}%"
     )
 
-
 def period_key_to_label(key: str) -> str:
     """Convert an internal period key to a human label."""
     return {"daily": "Today", "weekly": "This Week", "monthly": "This Month"}[key]
-
 
 def rank_users(users_stats, key, reverse=True):
     """Return user name and the chosen metric's value."""
@@ -62,9 +56,7 @@ def rank_users(users_stats, key, reverse=True):
                   else min(users_stats.items(), key=lambda x: x[1][key])
     return user, value[key]
 
-
 # ────────── leaderboard helpers ──────────
-
 
 def week_meta(now: datetime) -> tuple[str, str]:
     """Return ('WEEK 30', 'Jul 28 – Aug 3') for the given Dhaka date."""
@@ -73,7 +65,6 @@ def week_meta(now: datetime) -> tuple[str, str]:
     week_no = now.isocalendar().week
     range_txt = f"{monday:%b %d} – {sunday:%b %d}"
     return f"WEEK {week_no}", range_txt
-
 
 def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
     """Return '3-2'  and  '🔥3W' / '❌2L' / '✔️1W' / '—' """
@@ -99,7 +90,6 @@ def wl_and_streak(picks: list[dict]) -> tuple[str, str]:
         streak_txt = f"{icon}{streak}{'W' if last_type=='win' else 'L'}"
     return f"{wins}-{losses}", streak_txt
 
-
 # ───────────── admin guard ─────────────
 def admin_required(handler):
     @wraps(handler)
@@ -113,7 +103,6 @@ def admin_required(handler):
         return await handler(update, context, *args, **kwargs)
     return wrapper
 
-
 # ───────────── /start ─────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -122,7 +111,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Type /commands to see everything I can do.",
         parse_mode=ParseMode.MARKDOWN
     )
-
 
 # ───────────── /commands ─────────────
 async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -138,6 +126,36 @@ async def commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
+# ───────────── DELETE MESSAGES FUNCTION ─────────────
+async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
+    """Delete both user command and bot response messages with enhanced error handling"""
+    try:
+        job_data = context.job.data
+        chat_id = job_data['chat_id']
+        user_message_id = job_data.get('user_message_id')
+        bot_message_id = job_data['bot_message_id']
+        
+        print(f"🗑️ Attempting to delete messages in chat {chat_id}")
+        print(f"   User message ID: {user_message_id}")
+        print(f"   Bot message ID: {bot_message_id}")
+        
+        # Try to delete user's command message
+        if user_message_id:
+            try:
+                await context.bot.delete_message(chat_id, user_message_id)
+                print(f"✅ Successfully deleted user message {user_message_id}")
+            except Exception as e:
+                print(f"❌ Failed to delete user message {user_message_id}: {str(e)}")
+        
+        # Try to delete bot's response message
+        try:
+            await context.bot.delete_message(chat_id, bot_message_id)
+            print(f"✅ Successfully deleted bot message {bot_message_id}")
+        except Exception as e:
+            print(f"❌ Failed to delete bot message {bot_message_id}: {str(e)}")
+            
+    except Exception as e:
+        print(f"🚫 Critical error in delete_messages: {str(e)}")
 
 # ───────────── protected commands ─────────────
 @admin_required
@@ -152,6 +170,11 @@ async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.MARKDOWN
         )
         
+        print(f"📝 Scheduling deletion for /addpick command")
+        print(f"   Chat ID: {update.effective_chat.id}")
+        print(f"   User message ID: {update.message.message_id}")
+        print(f"   Bot message ID: {bot_message.message_id}")
+        
         # Schedule deletion of both messages after 2 minutes (120 seconds)
         context.job_queue.run_once(
             delete_messages,
@@ -163,9 +186,9 @@ async def addpick(update: Update, context: ContextTypes.DEFAULT_TYPE):
             }
         )
         
-    except Exception:
+    except Exception as e:
+        print(f"🚫 Error in addpick: {str(e)}")
         await update.message.reply_text("⚠️ Usage: /addpick <user> <odds> <stake>")
-
 
 @admin_required
 async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -178,6 +201,11 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Send the response message
             response_text = "✅ Result stored." if result.lower() == "win" else "❌ Result stored."
             bot_message = await update.message.reply_text(response_text)
+            
+            print(f"📝 Scheduling deletion for /setresult command")
+            print(f"   Chat ID: {update.effective_chat.id}")
+            print(f"   User message ID: {update.message.message_id}")
+            print(f"   Bot message ID: {bot_message.message_id}")
             
             # Schedule deletion of both messages after 2 minutes (120 seconds)
             context.job_queue.run_once(
@@ -192,11 +220,9 @@ async def setresult(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("🔎 Pick not found.")
             
-    except Exception:
+    except Exception as e:
+        print(f"🚫 Error in setresult: {str(e)}")
         await update.message.reply_text("⚠️ Usage: /setresult <id> <win/loss>")
-
-
-
 
 async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rows = [
@@ -218,8 +244,6 @@ async def pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
     )
 
-
-
 @admin_required
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
@@ -239,9 +263,20 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"👤 *{user}*\n{dash_line(period_key_to_label(period), stats_for(user, period))}"
                 for user in get_all_users()
             ]
-            await update.message.reply_text(
+            bot_message = await update.message.reply_text(
                 "\n\n".join(lines) if lines else "📉 No finished picks yet.",
                 parse_mode=ParseMode.MARKDOWN,
+            )
+            
+            # Schedule deletion after 30 minutes for /stats all
+            context.job_queue.run_once(
+                delete_messages,
+                1800,  # 30 minutes
+                data={
+                    'chat_id': update.effective_chat.id,
+                    'user_message_id': update.message.message_id,
+                    'bot_message_id': bot_message.message_id
+                }
             )
         else:
             st = stats_for(target, period)
@@ -312,9 +347,10 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"_Updated: {datetime.now(DHAKA):%Y-%m-%d %I:%M %p}_"
         ]
 
-        await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
+        # ✅ FIXED: Properly capture bot_message
+        bot_message = await update.message.reply_text("\n".join(msg), parse_mode=ParseMode.MARKDOWN)
 
-                # Schedule deletion after 30 minutes for /stats all
+        # Schedule deletion after 30 minutes for /stats all
         context.job_queue.run_once(
             delete_messages,
             1800,  # 30 minutes
@@ -419,9 +455,6 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.callback_query.edit_message_text(txt, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
 
-
-
-
 # ---------- callback dispatcher ----------
 async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # map button → period and reuse the same code above
@@ -430,27 +463,6 @@ async def leaderboard_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # store in context so leaderboard() can see it
     context.data = period
     await leaderboard(update, context)
-
-
-async def delete_messages(context: ContextTypes.DEFAULT_TYPE):
-    """Delete both user command and bot response messages"""
-    job_data = context.job.data
-    chat_id = job_data['chat_id']
-    user_message_id = job_data['user_message_id']
-    bot_message_id = job_data['bot_message_id']
-    
-    try:
-        # Delete user's command message
-        await context.bot.delete_message(chat_id, user_message_id)
-    except Exception:
-        pass  # Message might already be deleted or bot lacks permission
-    
-    try:
-        # Delete bot's response message
-        await context.bot.delete_message(chat_id, bot_message_id)
-    except Exception:
-        pass  # Message might already be deleted
-
 
 @admin_required
 async def resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -471,7 +483,6 @@ async def resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode=ParseMode.MARKDOWN
     )
-
 
 async def confirm_resetdb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query   = update.callback_query
@@ -562,8 +573,6 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
     )
 
-
-
 # ───────────── bot init ─────────────
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -580,4 +589,3 @@ app.add_handler(CallbackQueryHandler(confirm_resetdb, pattern="^resetdb_"))
 app.add_handler(CallbackQueryHandler(leaderboard_cb, pattern="^lb_"))
 
 app.run_polling()
-
